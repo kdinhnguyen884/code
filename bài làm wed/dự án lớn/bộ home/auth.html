@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduHub - Xác thực</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+    font-family:'Roboto',sans-serif;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:
+        radial-gradient(circle at top left,#3B82F6,transparent 40%),
+        radial-gradient(circle at bottom right,#6366F1,transparent 40%),
+        linear-gradient(135deg,#0F172A,#1E3A8A);
+    overflow:hidden;
+}
+
+.auth-card{
+    width:400px;
+    padding:45px 40px;
+    border-radius:24px;
+    background:rgba(255,255,255,0.12);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.25);
+    box-shadow:0 25px 50px rgba(0,0,0,0.35);
+    color:white;
+    text-align:center;
+    animation:fadeUp .6s ease;
+}
+
+@keyframes fadeUp{
+    from{opacity:0;transform:translateY(30px)}
+    to{opacity:1;transform:none}
+}
+
+.logo{
+    font-family:'Montserrat';
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:1px;
+    margin-bottom:8px;
+}
+
+.logo span{color:#60A5FA}
+
+h2{
+    font-family:'Montserrat';
+    margin-top:10px;
+}
+
+p{
+    font-size:14px;
+    opacity:.85;
+    margin-bottom:30px;
+}
+
+.input-group{
+    position:relative;
+    margin-bottom:18px;
+}
+
+.input-group i{
+    position:absolute;
+    top:50%;
+    left:14px;
+    transform:translateY(-50%);
+    color:#94A3B8;
+}
+
+input{
+    width:100%;
+    padding:13px 14px 13px 42px;
+    border-radius:12px;
+    border:none;
+    outline:none;
+    font-size:15px;
+    background:rgba(255,255,255,0.95);
+}
+
+input:focus{
+    box-shadow:0 0 0 3px rgba(96,165,250,.4);
+}
+
+button{
+    width:100%;
+    padding:14px;
+    border-radius:14px;
+    border:none;
+    font-size:16px;
+    font-weight:600;
+    color:white;
+    background:linear-gradient(135deg,#2563EB,#3B82F6);
+    cursor:pointer;
+    transition:.3s;
+    box-shadow:0 10px 25px rgba(37,99,235,.4);
+}
+
+button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 15px 35px rgba(37,99,235,.6);
+}
+
+.toggle-link{
+    margin-top:22px;
+    font-size:14px;
+    cursor:pointer;
+    color:#BFDBFE;
+    text-decoration:underline;
+}
+
+.message{
+    margin-top:16px;
+    min-height:20px;
+    font-size:14px;
+    color:#FCD34D;
+}
+</style>
+</head>
+
+<body>
+
+<div class="auth-card">
+    <div class="logo">Edu<span>Hub</span></div>
+
+    <h2 id="title">Đăng Nhập</h2>
+    <p id="subtitle">Chào mừng bạn quay trở lại EduHub</p>
+
+    <div class="input-group">
+        <i class="fa fa-user"></i>
+        <input type="text" id="username" placeholder="Tên đăng nhập">
+    </div>
+
+    <div class="input-group">
+        <i class="fa fa-lock"></i>
+        <input type="password" id="password" placeholder="Mật khẩu">
+    </div>
+
+    <button id="authBtn">Đăng Nhập Ngay</button>
+
+    <div class="toggle-link" id="toggleLink">
+        Chưa có tài khoản? Đăng ký ngay
+    </div>
+
+    <div class="message" id="msg"></div>
+</div>
+
+<script>
+const title=document.getElementById('title');
+const subtitle=document.getElementById('subtitle');
+const authBtn=document.getElementById('authBtn');
+const toggleLink=document.getElementById('toggleLink');
+const msg=document.getElementById('msg');
+
+let isLogin=true;
+
+toggleLink.onclick=()=>{
+    isLogin=!isLogin;
+    if(isLogin){
+        title.textContent="Đăng Nhập";
+        subtitle.textContent="Chào mừng bạn quay trở lại EduHub";
+        authBtn.textContent="Đăng Nhập Ngay";
+        authBtn.style.background="linear-gradient(135deg,#2563EB,#3B82F6)";
+        toggleLink.textContent="Chưa có tài khoản? Đăng ký ngay";
+    }else{
+        title.textContent="Đăng Ký";
+        subtitle.textContent="Tạo tài khoản để quản lý việc học";
+        authBtn.textContent="Tạo Tài Khoản";
+        authBtn.style.background="linear-gradient(135deg,#059669,#10B981)";
+        toggleLink.textContent="Đã có tài khoản? Đăng nhập";
+    }
+    msg.textContent="";
+}
+
+authBtn.onclick=()=>{
+    const user=username.value.trim();
+    const pass=password.value.trim();
+
+    if(!user||!pass){
+        msg.textContent="⚠️ Vui lòng nhập đủ thông tin!";
+        return;
+    }
+
+    if(isLogin){
+        const storedPass=localStorage.getItem('user_'+user);
+        if(storedPass===pass){
+            localStorage.setItem('isLoggedIn','true');
+            localStorage.setItem('currentUser',user);
+            window.location.href='dashboard.html';
+        }else{
+            msg.textContent="❌ Sai tên đăng nhập hoặc mật khẩu!";
+        }
+    }else{
+        if(localStorage.getItem('user_'+user)){
+            msg.textContent="⚠️ Tên tài khoản đã tồn tại!";
+        }else{
+            localStorage.setItem('user_'+user,pass);
+            msg.style.color="#6EE7B7";
+            msg.textContent="✅ Đăng ký thành công! Hãy đăng nhập.";
+            setTimeout(()=>toggleLink.click(),1000);
+        }
+    }
+}
+</script>
+
+</body>
+</html>

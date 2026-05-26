@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thợ Mỏ Huyền Thoại: Ultimate Version</title>
+    <style>
+        body { background: #050505; color: #eee; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; overflow: hidden; }
+        .dashboard { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: #111; width: 100%; justify-content: center; border-bottom: 2px solid #444; z-index: 10; }
+        .stat { background: #222; padding: 6px 12px; border-radius: 6px; border: 1px solid #333; font-size: 13px; font-weight: bold; color: #4fc3f7; }
+        .boss-bar-container { width: 80%; height: 12px; background: #300; margin: 10px; border-radius: 6px; border: 2px solid #500; display: none; overflow: hidden; }
+        #boss-hp { width: 100%; height: 100%; background: linear-gradient(90deg, #f00, #ff5252); transition: width 0.3s ease; }
+        canvas { border: 4px solid #333; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .shop { display: flex; gap: 8px; padding: 15px; background: #111; width: 100%; justify-content: center; border-top: 2px solid #333; }
+        button { background: #1b5e20; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2e7d32; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="stat">💰 Tiền: <span id="money">0</span>$</div>
+    <div class="stat">🎒 Túi: <span id="bag">0</span>/<span id="bagMax">5</span></div>
+    <div class="stat">🧪 Oxy: <span id="oxy">100</span>%</div>
+    <div class="stat">🔋 Pin: <span id="battery">100</span>%</div>
+    <div class="stat">⚔️ Kiếm: Lvl <span id="sword">0</span></div>
+    <div class="stat">🪜 Thang: <span id="ladders">5</span></div>
+    <div class="stat">📉 Sâu: <span id="depth">0</span>m</div>
+</div>
+
+<div class="boss-bar-container" id="boss-ui"><div id="boss-hp"></div></div>
+<canvas id="game" width="720" height="440"></canvas>
+
+<div class="shop">
+    <button onclick="buy('oxy', 25)">Hồi Oxy (25$)</button>
+    <button onclick="buy('battery', 20)">Sạc Pin (20$)</button>
+    <button onclick="buy('ladder', 40)">+5 Thang (40$)</button>
+    <button onclick="buy('elevator', 750)" id="eleBtn">Mua Thang Máy (750$)</button>
+    <button onclick="buy('sword', 250)">Nâng Kiếm (250$)</button>
+    <button onclick="buy('bag', 200)">Mở rộng Balo (200$)</button>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const TILE = 30;
+const COLS = canvas.width / TILE;
+const ROWS = 6000; // Đảm bảo không crash
+
+let game = {
+    money: 0, oxy: 100, battery: 100, bag: 0, bagMax: 5,
+    ladders: 5, swordLvl: 0, hasElevator: false,
+    player: { x: 9, y: 0 },
+    camY: 0, swing: 0, shake: 0,
+    map: [], bats: [], particles: [], boss: null, isOver: false
+};
+
+function initMap() {
+    for(let r=0; r<ROWS; r++) {
+        game.map[r] = [];
+        for(let c=0; c<COLS; c++) {
+            if(r === 0) game.map[r][c] = 8;
+            else if(r < 5) game.map[r][c] = 0;
+            else {
+                let rnd = Math.random();
+                if(rnd < 0.09) game.map[r][c] = (r < 100 ? 2 : (r < 250 ? 3 : 5)); 
+                else if(rnd < 0.18) game.map[r][c] = 6; // Đá cứng
+                else if(rnd < 0.12) game.map[r][c] = 4; // Bom
+                else game.map[r][c] = 1;
+            }
+        }
+    }
+}
+
+function createParticles(x, y, color) {
+    for(let i=0; i<5; i++) {
+        game.particles.push({x, y, vx: Math.random()*4-2, vy: Math.random()*4-2, life: 15, color});
+    }
+}
+
+function update() {
+    if(game.isOver) return;
+    if(game.shake > 0) game.shake--;
+
+    // Logic sinh tồn
+    if(game.player.y === 0) {
+        game.oxy = Math.min(100, game.oxy + 0.8);
+        game.battery = Math.min(100, game.battery + 0.3);
+        game.bag = 0;
+    } else {
+        if(game.map[game.player.y][game.player.x] !== 9 && game.player.y+1 < ROWS && game.map[game.player.y+1][game.player.x] === 0) {
+            game.player.y++;
+        }
+        game.oxy -= 0.06;
+        game.battery -= 0.08;
+    }
+
+    if(game.oxy <= 0 || game.battery <= 0) die("CẠN KIỆT NGUỒN SỐNG!");
+
+    // Boss & Quái
+    if(game.player.y > 220 && !game.boss || game.player.y > 800 && !game.boss) {
+        game.boss = { x: 300, y: 230 * TILE, hp: 3000, mHp: 3000, dir: 4 };
+        document.getElementById('boss-ui').style.display = 'block';
+    }
+    if(game.boss) {
+        game.boss.x += game.boss.dir;
+        if(game.boss.x < 0 || game.boss.x > canvas.width-80) game.boss.dir *= -1;
+        if(Math.hypot(game.boss.x - game.player.x*TILE, game.boss.y - game.player.y*TILE) < 60) {
+            game.oxy -= 1; game.shake = 10;
+        }
+    }
+
+    game.bats.forEach((b, i) => {
+        let dx = (game.player.x*TILE) - b.x, dy = (game.player.y*TILE) - b.y;
+        let d = Math.hypot(dx, dy);
+        if(d < 500) { b.x += dx*0.02; b.y += dy*0.02; }
+        if(d < 20) { game.oxy -= 0.3; game.shake = 5; }
+    });
+
+    game.particles.forEach((p, i) => {
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if(p.life <= 0) game.particles.splice(i, 1);
+    });
+
+    if(game.swing > 0) game.swing--;
+    let goal = Math.max(0, (game.player.y - 5) * TILE);
+    game.camY += (goal - game.camY) * 0.1;
+    refreshUI();
+}
+
+function draw() {
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    ctx.save();
+    if(game.shake > 0) ctx.translate(Math.random()*4-2, Math.random()*4-2);
+    
+    ctx.save();
+    ctx.translate(0, -game.camY);
+
+    // Vẽ Map
+    for(let r=0; r<ROWS; r++) {
+        if(r*TILE < game.camY - TILE || r*TILE > game.camY + canvas.height) continue;
+        for(let c=0; c<COLS; c++) {
+            let t = game.map[r][c];
+            if(t === 0) continue;
+            ctx.fillStyle = (t===1?'#5d4037':t===2?'#444':t===3?'#ffc107':t===5?'#00bcd4':t===6?'#111':t===4?'#f44336':t===8?'#4caf50':'#795548');
+            if(t===9) { // Vẽ thang
+                ctx.fillRect(c*TILE+10, r*TILE, 4, TILE); ctx.fillRect(c*TILE+26, r*TILE, 4, TILE);
+                for(let i=5; i<TILE; i+=10) ctx.fillRect(c*TILE+10, r*TILE+i, 20, 2);
+            } else ctx.fillRect(c*TILE, r*TILE, TILE-1, TILE-1);
+        }
+    }
+
+    // Nhân vật: Màu TRẮNG - ĐỎ - VÀNG
+    let px = game.player.x*TILE, py = game.player.y*TILE;
+    ctx.fillStyle = "#fff"; ctx.fillRect(px+8, py+8, 24, 24); // Thân trắng
+    ctx.fillStyle = "#f00"; ctx.fillRect(px+12, py+12, 16, 8); // Chi tiết đỏ
+    ctx.fillStyle = "#ff0"; ctx.fillRect(px+14, py+4, 12, 4);  // Mũ vàng
+    
+    if(game.swing > 0) {
+        ctx.beginPath(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+        ctx.arc(px+20, py+20, 70 + game.swordLvl*20, 0, Math.PI*2); ctx.stroke();
+    }
+
+    if(game.boss) { ctx.fillStyle = '#b71c1c'; ctx.fillRect(game.boss.x, game.boss.y, 80, 80); }
+    game.bats.forEach(b => { ctx.fillStyle = '#9c27b0'; ctx.fillRect(b.x+10, b.y+10, 20, 15); });
+    game.particles.forEach(p => { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); });
+
+    ctx.restore();
+
+    // Fix Đèn pin
+    let sX = game.player.x*TILE+20, sY = (game.player.y*TILE+20)-game.camY;
+    let rad = (game.battery/100)*280+70;
+    let grad = ctx.createRadialGradient(sX, sY, 10, sX, sY, rad);
+    grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.96)');
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(sX, sY, rad, 0, Math.PI*2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+}
+
+function move(dx, dy) {
+    let nx = game.player.x+dx, ny = game.player.y+dy;
+    if(nx<0 || nx>=COLS || ny<0 || ny>=ROWS) return;
+    let t = game.map[ny][nx];
+    if(t===6) return;
+    if(dy===-1 && game.map[game.player.y][game.player.x]!==9 && t!==9) { // Jetpack
+        if(game.oxy > 5) game.oxy -= 2; else return;
+    }
+    if(t===4) { game.oxy -= 30; game.shake=15; game.map[ny][nx]=0; createParticles(nx*TILE+20, ny*TILE+20, '#f00'); }
+    else if([2,3,5].includes(t)) {
+        if(game.bag < game.bagMax) { game.money += (t===2?30:t===3?80:500); game.bag++; game.map[ny][nx]=0; createParticles(nx*TILE+20, ny*TILE+20, '#ff0'); }
+    } else if(t===1) { game.map[ny][nx]=0; createParticles(nx*TILE+20, ny*TILE+20, '#5d4037'); }
+    game.player.x = nx; game.player.y = ny;
+}
+
+function buy(type, price) {
+    if(game.money < price) return;
+    game.money -= price;
+    if(type==='oxy') game.oxy=100;
+    if(type==='battery') game.battery=100;
+    if(type==='ladder') game.ladders+=5;
+    if(type==='bag') game.bagMax+=5;
+    if(type==='sword') game.swordLvl++;
+    if(type==='elevator') { game.hasElevator=true; document.getElementById('eleBtn').disabled=true; }
+    refreshUI();
+}
+
+function refreshUI() {
+    document.getElementById('money').innerText = game.money;
+    document.getElementById('bag').innerText = game.bag;
+    document.getElementById('bagMax').innerText = game.bagMax;
+    document.getElementById('oxy').innerText = Math.floor(game.oxy);
+    document.getElementById('battery').innerText = Math.floor(game.battery);
+    document.getElementById('sword').innerText = game.swordLvl;
+    document.getElementById('ladders').innerText = game.ladders;
+    document.getElementById('depth').innerText = game.player.y;
+    if(game.boss) document.getElementById('boss-hp').style.width = (game.boss.hp/game.boss.mHp*100)+'%';
+}
+
+function die(m) { game.isOver=true; alert(m); location.reload(); }
+
+initMap();
+window.onkeydown = (e) => {
+    let k = e.key.toLowerCase();
+    if(k==='arrowleft') move(-1,0); if(k==='arrowright') move(1,0);
+    if(k==='arrowup') move(0,-1); if(k==='arrowdown') move(0,1);
+    if(k==='f' && game.swordLvl > 0) {
+        game.swing = 10;
+        if(game.boss && Math.hypot(game.boss.x - game.player.x*TILE, game.boss.y - game.player.y*TILE) < 120) {
+            game.boss.hp -= (50 + game.swordLvl*30);
+            if(game.boss.hp <= 0) { game.money+=5000; game.boss=null; alert("BOSS DEFEATED!"); }
+        }
+    }
+    if(k==='e' && game.hasElevator) game.player.y = 0;
+    if(e.key===' ' && game.ladders > 0 && game.map[game.player.y][game.player.x]===0) { game.map[game.player.y][game.player.x]=9; game.ladders--; }
+};
+setInterval(() => { update(); draw(); }, 30);
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Game Trắc Nghiệm Pro</title>
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
+        .app { width: 90%; max-width: 500px; background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 0 30px #000; position: relative; }
+        
+        /* Đồng hồ */
+        .timer-bar { height: 5px; background: #333; margin-bottom: 20px; border-radius: 5px; overflow: hidden; }
+        .timer-fill { height: 100%; background: #00e676; width: 100%; transition: width 1s linear; }
+
+        /* Tiêu đề có thể bấm được */
+        h1 { font-size: 1.5rem; text-align: center; color: #aaa; cursor: pointer; margin-top: 0; transition: 0.3s; }
+        h1:active { transform: scale(0.95); color: #fff; }
+
+        h2 { font-size: 1.2rem; min-height: 60px; }
+        
+        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; background: #2c2c2c; color: white; border: 1px solid #444; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: left;}
+        .btn:hover:not([disabled]) { background: #3e3e3e; border-color: #888; }
+        .btn.correct { background: #1b5e20; border-color: #00e676; }
+        .btn.wrong { background: #b71c1c; border-color: #ff5252; }
+
+        .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; color: #888; font-size: 0.9em; }
+        .btn-next { background: #2979ff; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; display: none; }
+        
+        /* Nút Admin mặc định bị ẩn */
+        #admin-link { display: none; position: absolute; top: 10px; right: 10px; color: #ff5252; text-decoration: none; font-size: 0.8rem; font-weight: bold; border: 1px solid #ff5252; padding: 5px 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+        <h1 id="secret-trigger" title="Bấm 5 lần để mở Admin">GAME TRẮC NGHIỆM</h1>
+        
+        <a href="admin.html" id="admin-link">⚙️ Vào Admin</a>
+        
+        <div class="timer-bar"><div id="timer" class="timer-fill"></div></div>
+
+        <div id="quiz-box">
+            <h2 id="q-text">Đang tải...</h2>
+            <div id="opts"></div>
+        </div>
+
+        <div class="footer">
+            <span id="score">Điểm: 0</span>
+            <span id="progress">1/10</span>
+            <button id="next-btn" class="btn-next">Tiếp theo ➡</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. LOGIC BẢO MẬT ADMIN ---
+        const SECRET_PASS = "admin123"; // Mật khẩu của bạn
+        let clickCount = 0;
+        let clickTimer;
+
+        document.getElementById('secret-trigger').addEventListener('click', () => {
+            clickCount++;
+            
+            // Nếu ngừng bấm quá 1 giây thì reset đếm
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { clickCount = 0; }, 1000);
+
+            if (clickCount === 5) {
+                let input = prompt("🔐 Nhập mật khẩu quản trị viên:");
+                if (input === SECRET_PASS) {
+                    alert("Truy cập được chấp nhận!");
+                    // Lưu trạng thái đã đăng nhập vào Session (Tắt trình duyệt là mất)
+                    sessionStorage.setItem('isAdmin', 'true');
+                    // Hiện nút hoặc chuyển trang luôn
+                    window.location.href = 'admin.html'; 
+                } else {
+                    alert("Sai mật khẩu!");
+                    clickCount = 0;
+                }
+            }
+        });
+
+        // --- 2. LOGIC GAME (Giữ nguyên như cũ) ---
+        const TIME_LIMIT = 15;
+        let fullDb = JSON.parse(localStorage.getItem('quizData')) || [];
+        let questions = [];
+        let currentIdx = 0;
+        let score = 0;
+        let timerInterval;
+        let timeLeft = TIME_LIMIT;
+
+        const qText = document.getElementById('q-text');
+        const optsDiv = document.getElementById('opts');
+        const nextBtn = document.getElementById('next-btn');
+        const timerFill = document.getElementById('timer');
+        const scoreSpan = document.getElementById('score');
+        const progressSpan = document.getElementById('progress');
+
+        function startQuiz() {
+            if (fullDb.length === 0) return qText.innerText = "Kho đề trống! Hãy nhờ Admin thêm câu hỏi.";
+            questions = fullDb.sort(() => 0.5 - Math.random()).slice(0, 10);
+            currentIdx = 0; score = 0;
+            scoreSpan.innerText = `Điểm: 0`;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            clearInterval(timerInterval);
+            timeLeft = TIME_LIMIT;
+            startTimer();
+            let item = questions[currentIdx];
+            qText.innerText = `Câu ${currentIdx + 1}: ${item.q}`;
+            progressSpan.innerText = `${currentIdx + 1}/${questions.length}`;
+            optsDiv.innerHTML = '';
+            nextBtn.style.display = 'none';
+
+            let indices = [0, 1, 2, 3].sort(() => 0.5 - Math.random());
+            indices.forEach(i => {
+                let btn = document.createElement('button');
+                btn.innerText = item.options[i];
+                btn.className = 'btn';
+                btn.onclick = () => checkAnswer(i, item.correct, btn);
+                optsDiv.appendChild(btn);
+            });
+        }
+
+        function startTimer() {
+            timerFill.style.width = '100%';
+            timerFill.style.backgroundColor = '#00e676';
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerFill.style.width = `${(timeLeft / TIME_LIMIT) * 100}%`;
+                if(timeLeft < 5) timerFill.style.backgroundColor = '#ff5252';
+                if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeOut(); }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            Array.from(optsDiv.children).forEach(btn => btn.disabled = true);
+            nextBtn.style.display = 'block';
+        }
+
+        function checkAnswer(selectedIndex, correctIndex, btn) {
+            clearInterval(timerInterval);
+            Array.from(optsDiv.children).forEach(b => b.disabled = true);
+            
+            // Logic kiểm tra đáp án (đã fix cho trường hợp shuffle)
+            // Vì ta shuffle nút hiển thị nhưng logic data vẫn theo index gốc, 
+            // nên ta so sánh text hoặc map lại index. 
+            // Ở đây mình dùng cách đơn giản nhất: So sánh text của nút bấm với text đáp án đúng.
+            
+            const correctText = questions[currentIdx].options[correctIndex];
+            
+            if (btn.innerText === correctText) {
+                btn.classList.add('correct');
+                score++;
+                scoreSpan.innerText = `Điểm: ${score}`;
+            } else {
+                btn.classList.add('wrong');
+                // Hiện đáp án đúng
+                Array.from(optsDiv.children).forEach(b => {
+                    if (b.innerText === correctText) b.classList.add('correct');
+                });
+            }
+            nextBtn.style.display = 'block';
+            if (currentIdx === questions.length - 1) nextBtn.innerText = "Xem kết quả";
+            else nextBtn.innerText = "Tiếp theo ➡";
+        }
+
+        nextBtn.onclick = () => {
+            currentIdx++;
+            if (currentIdx < questions.length) showQuestion();
+            else endGame();
+        };
+
+        function endGame() {
+            optsDiv.innerHTML = '';
+            qText.innerText = `🎉 Hoàn thành! ${score}/${questions.length} điểm.`;
+            nextBtn.innerText = "Chơi lại";
+            nextBtn.onclick = startQuiz;
+            timerFill.style.width = '0%';
+        }
+
+        startQuiz();
+    </script>
+</body>
+</html>

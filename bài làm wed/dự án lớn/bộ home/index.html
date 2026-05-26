@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduHub - Trung Tâm Học Tập Của Bạn</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+
+/* ================= ROOT ================= */
+:root {
+    --primary: #4f46e5;
+    --secondary: #2563eb;
+    --bg-light: #f8fafc;
+    --bg-dark: #0f172a;
+    --text-light: #1e293b;
+    --text-dark: #f1f5f9;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-light);
+    color: var(--text-light);
+    transition: 0.4s;
+}
+
+body.dark {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+/* ================= CONTAINER ================= */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* ================= NAVBAR ================= */
+.navbar {
+    position: fixed;
+    width: 100%;
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.7);
+    padding: 15px 0;
+    z-index: 1000;
+    transition: 0.4s;
+}
+
+body.dark .navbar {
+    background: rgba(15,23,42,0.7);
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-family: 'Montserrat';
+    font-size: 22px;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--primary);
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.nav-links a {
+    text-decoration: none;
+    font-weight: 500;
+    color: inherit;
+    transition: 0.3s;
+}
+
+.nav-links a:hover {
+    color: var(--primary);
+}
+
+.toggle-btn {
+    cursor: pointer;
+    font-size: 18px;
+}
+
+/* ================= HERO ================= */
+.hero {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #4f46e5, #2563eb);
+    color: white;
+    text-align: center;
+    padding-top: 80px;
+}
+
+.hero-content {
+    width: 100%;
+}
+
+.hero h1 {
+    font-family: 'Montserrat';
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.hero p {
+    max-width: 600px;
+    margin: auto;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 25px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.btn-primary {
+    background: white;
+    color: var(--primary);
+}
+
+.btn-primary:hover {
+    transform: translateY(-4px);
+}
+
+.btn-secondary {
+    border: 2px solid white;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: white;
+    color: var(--primary);
+}
+
+/* ================= SECTIONS ================= */
+section {
+    padding: 100px 0;
+    text-align: center;
+}
+
+.section-title {
+    font-family: 'Montserrat';
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.section-subtitle {
+    color: #64748b;
+    margin-bottom: 60px;
+}
+
+/* ================= FEATURES ================= */
+#features {
+    background: white;
+}
+
+body.dark #features {
+    background: #111827;
+}
+
+.feature-item {
+    padding: 30px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transition: 0.4s;
+}
+
+body.dark .feature-item {
+    background: rgba(255,255,255,0.05);
+}
+
+.feature-item:hover {
+    transform: translateY(-10px);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    gap: 30px;
+}
+
+/* ================= PROJECTS ================= */
+.projects-section {
+    background: #f1f5f9;
+}
+
+body.dark .projects-section {
+    background: #0f172a;
+}
+
+.grid-projects {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    gap: 30px;
+}
+
+.card {
+    background: rgba(255,255,255,0.7);
+    padding: 40px 20px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transition: 0.4s;
+}
+
+body.dark .card {
+    background: rgba(255,255,255,0.05);
+}
+
+.card:hover {
+    transform: translateY(-10px);
+}
+
+.card-icon {
+    font-size: 45px;
+    margin-bottom: 20px;
+}
+
+/* ================= ANIMATION ================= */
+.fade-up {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: 0.8s;
+}
+
+.fade-up.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ================= FOOTER ================= */
+footer {
+    padding: 40px 0;
+    background: #111827;
+    color: white;
+    text-align: center;
+}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:768px){
+    .hero h1 { font-size: 32px; }
+    .nav-links { gap: 15px; }
+}
+
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+<div class="container">
+<a href="#" class="logo">EduHub.</a>
+<ul class="nav-links">
+<li><a href="#">Trang chủ</a></li>
+<li><a href="#projects">Lộ trình</a></li>
+<li><a href="#features">Giới thiệu</a></li>
+<li><a href="auth.html" class="btn-primary">Đăng nhập</a></li>
+<li class="toggle-btn" onclick="toggleDark()">🌙</li>
+</ul>
+</div>
+</nav>
+
+<header class="hero">
+<div class="container hero-content">
+<h1>Học Thông Minh Hơn,<br>Không Phải Nhiều Hơn</h1>
+<p>Kết nối kiến thức từ các dự án trước để xây dựng lộ trình phát triển toàn diện cho tương lai của bạn.</p>
+<div class="hero-buttons">
+<a href="auth.html" class="btn-primary">Bắt đầu học</a>
+<a href="#features" class="btn-secondary">Xem giới thiệu</a>
+</div>
+</div>
+</header>
+
+<section id="features">
+<div class="container">
+<h2 class="section-title fade-up">Tại sao chọn EduHub?</h2>
+<div class="features-grid">
+<div class="feature-item fade-up">
+<div style="font-size:50px;">📊</div>
+<h4>Theo dõi trực quan</h4>
+<p>Biểu đồ thông minh giúp bạn biết chính xác mình đang ở đâu trên lộ trình.</p>
+</div>
+
+<div class="feature-item fade-up">
+<div style="font-size:50px;">🔒</div>
+<h4>Cá nhân hóa</h4>
+<p>Dữ liệu của bạn là của riêng bạn. Mỗi học viên có không gian lưu trữ độc lập.</p>
+</div>
+
+<div class="feature-item fade-up">
+<div style="font-size:50px;">🌓</div>
+<h4>Giao diện hiện đại</h4>
+<p>Hỗ trợ Dark Mode mạnh mẽ giúp bạn tập trung học tập bất kể ngày hay đêm.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section id="projects" class="projects-section">
+<div class="container">
+<h2 class="section-title fade-up">Hệ Sinh Thái Học Tập</h2>
+<p class="section-subtitle fade-up">Tổng hợp các dự án và công cụ bạn đã xây dựng</p>
+
+<div class="grid-projects">
+<div class="card fade-up"><div class="card-icon">📚</div><h3>THỜI KHOÁ BIỂU</h3><p>Nơi bạn lên dự án và công việc cho tuần này.</p></div>
+<div class="card fade-up"><div class="card-icon">💡</div><h3>CÂU ĐỐ TƯƠNG TÁC</h3><p>Các bài tập rèn luyện tư duy logic và giải quyết vấn đề.</p></div>
+<div class="card fade-up"><div class="card-icon">🚀</div><h3>ĐỀ THI TỔNG HỢP</h3><p>Ứng dụng kiến thức vào các bài tập thực tế ảo.</p></div>
+<div class="card fade-up"><div class="card-icon">⭐</div><h3>NHẬT KÍ HỌC TẬP</h3><p>Nơi bạn ghi chép lại thành quả của 1 ngày học tập.</p></div>
+</div>
+
+</div>
+</section>
+
+<footer>
+<div class="container">
+<p>&copy; 2024 EduHub Project. Được xây dựng để phát triển bản thân.</p>
+</div>
+</footer>
+
+<script>
+
+/* Dark Mode */
+function toggleDark(){
+    document.body.classList.toggle("dark");
+}
+
+/* Scroll Animation */
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        if(entry.isIntersecting){
+            entry.target.classList.add("show");
+        }
+    });
+});
+
+document.querySelectorAll('.fade-up').forEach(el => {
+    observer.observe(el);
+});
+
+</script>
+
+</body>
+</html>

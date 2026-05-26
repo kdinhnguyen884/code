@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Robot: Navigation System v3.0</title>
+    <style>
+        :root { --neon: #00ff41; --bg: #050505; --panel: #111; --danger: #ff4444; --gold: #ffd700; --fuel: #ff8c00; --info: #00d4ff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--neon); display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; }
+        
+        .header { text-align: center; margin-bottom: 15px; }
+        
+        /* BẢNG CHẨN ĐOÁN - ĐÂY LÀ PHẦN BẠN ĐANG TÌM */
+        .diag-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 1000px; margin-bottom: 15px; }
+        .diag-box { padding: 12px; border-radius: 8px; background: #151515; border: 1px solid #333; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .diag-label { display: block; font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+        .diag-value { font-weight: bold; font-size: 20px; font-family: 'Consolas', monospace; }
+
+        .main-container { display: flex; gap: 20px; align-items: flex-start; max-width: 1200px; width: 100%; justify-content: center; }
+
+        /* BẢNG GỢI Ý */
+        .cheat-sheet { background: var(--panel); border: 1px solid #333; padding: 15px; width: 220px; border-radius: 8px; }
+        .cmd-btn { display: block; width: 100%; text-align: left; background: #000; border: 1px solid #333; color: var(--info); padding: 10px; margin-bottom: 8px; cursor: pointer; border-radius: 4px; font-size: 14px; transition: 0.2s; }
+        .cmd-btn:hover { border-color: var(--neon); background: #0a1a0a; color: var(--neon); }
+
+        #grid { display: grid; background: #000; border: 2px solid #333; border-radius: 8px; overflow: hidden; position: relative; }
+        .cell { width: 50px; height: 50px; border: 1px solid #111; display: flex; align-items: center; justify-content: center; font-size: 26px; position: relative; }
+        .robot { background: #0a2a0a; transition: 0.2s; z-index: 10; box-shadow: inset 0 0 15px var(--neon); border-radius: 4px; }
+        .wall { background: #222; box-shadow: inset 0 0 10px #000; }
+        .goal { font-size: 32px; opacity: 0.2; filter: grayscale(1); transition: 0.5s; }
+        .goal.active { opacity: 1; filter: grayscale(0); text-shadow: 0 0 20px var(--gold); }
+        
+        /* Tọa độ mờ trên từng ô */
+        .coord-hint { position: absolute; bottom: 2px; right: 3px; font-size: 9px; color: #222; pointer-events: none; }
+
+        .editor-wrapper { display: flex; flex-direction: column; gap: 10px; width: 350px; }
+        #code-editor { background: #000; color: var(--neon); border: 1px solid #444; padding: 15px; height: 400px; font-family: 'Consolas', monospace; font-size: 15px; border-radius: 8px; outline: none; resize: none; line-height: 1.4; }
+        .btn-run { background: var(--neon); color: #000; border: none; padding: 18px; font-weight: bold; font-size: 20px; cursor: pointer; border-radius: 8px; transition: 0.3s; }
+        .btn-run:hover { background: #00cc33; box-shadow: 0 0 20px rgba(0,255,65,0.4); }
+
+        #terminal { margin-top: 15px; width: 1000px; padding: 12px; background: #000; border-radius: 8px; border: 1px solid #222; color: #888; font-size: 14px; min-height: 25px; border-left: 4px solid var(--neon); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 style="margin:0; letter-spacing: 4px; color: white;">AI ROBOT MISSION <span style="color:var(--neon)">v3.0</span></h1>
+    </div>
+
+    <div class="diag-container">
+        <div class="diag-box">
+            <span class="diag-label">Tiến độ</span>
+            <div id="lvl-val" class="diag-value" style="color:var(--gold)">Level 1</div>
+        </div>
+        <div class="diag-box">
+            <span class="diag-label">Tọa độ Robot (X, Y)</span>
+            <div id="pos-val" class="diag-value" style="color:var(--info)">0, 0</div>
+        </div>
+        <div class="diag-box">
+            <span class="diag-label">Hướng nhìn</span>
+            <div id="dir-val" class="diag-value" style="color:var(--neon)">RIGHT</div>
+        </div>
+        <div class="diag-box">
+            <span class="diag-label">Nhiên liệu (Fuel)</span>
+            <div id="fuel-val" class="diag-value" style="color:var(--fuel)">100</div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="cheat-sheet">
+            <h3 style="color:#555; font-size:12px; margin-top:0;">CHÈN LỆNH NHANH</h3>
+            <button class="cmd-btn" onclick="addCode('move')">move</button>
+            <button class="cmd-btn" onclick="addCode('left')">left</button>
+            <button class="cmd-btn" onclick="addCode('right')">right</button>
+            <h3 style="color:#555; font-size:12px; margin-top:20px;">CẤU TRÚC LOGIC</h3>
+            <button class="cmd-btn" onclick="addCode('repeat 5 {\n  \n}')">repeat</button>
+            <button class="cmd-btn" onclick="addCode('if wall {\n  \n}')">if wall</button>
+            <div style="margin-top:30px; border-top: 1px solid #333; padding-top:15px;">
+                <span class="diag-label">Pin năng lượng</span>
+                <div id="energy-val" style="font-weight:bold; color:var(--gold); font-size:18px;">0/0</div>
+            </div>
+        </div>
+
+        <div id="grid"></div>
+
+        <div class="editor-wrapper">
+            <textarea id="code-editor" spellcheck="false" placeholder="// Viết thuật toán của bạn tại đây..."></textarea>
+            <button id="run-btn" class="btn-run" onclick="runCode()">KÍCH HOẠT (EXECUTE)</button>
+            <button onclick="resetData()" style="color:#444; background:none; border:none; cursor:pointer; font-size:11px; text-decoration: underline; margin-top:10px;">Xóa dữ liệu & chơi lại từ đầu</button>
+        </div>
+    </div>
+
+    <div id="terminal">> Hệ thống sẵn sàng. Vui lòng nạp mã điều khiển...</div>
+
+    <script>
+        let currentLevel = parseInt(localStorage.getItem('robot_v3_lvl')) || 1;
+        let gridSize, robotPos, direction, goalPos, walls, items, mines;
+        let fuel, isRunning = false, mapData = null;
+
+        function createMap() {
+            gridSize = Math.min(6 + Math.floor(currentLevel / 3), 11);
+            walls = []; items = []; mines = [];
+            let portal = { x: gridSize - 1, y: gridSize - 1 };
+            
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    if ((x === 0 && y === 0) || (x === portal.x && y === portal.y)) continue;
+                    let r = Math.random();
+                    if (r < 0.18) walls.push({x, y});
+                    else if (r < 0.23) items.push({x, y});
+                    else if (r < 0.26 && currentLevel > 1) mines.push({x, y});
+                }
+            }
+            if(items.length === 0) items.push({x: Math.floor(gridSize/2), y: Math.floor(gridSize/2)});
+            mapData = { walls, items, mines, goal: portal, size: gridSize, fuel: gridSize * gridSize + 25 };
+            loadMap();
+        }
+
+        function loadMap() {
+            gridSize = mapData.size;
+            walls = [...mapData.walls]; items = [...mapData.items]; mines = [...mapData.mines];
+            goalPos = mapData.goal;
+            fuel = mapData.fuel;
+            robotPos = { x: 0, y: 0 };
+            direction = 'right';
+            updateStats();
+            render();
+        }
+
+        function updateStats() {
+            document.getElementById('lvl-val').innerText = `Level ${currentLevel}`;
+            document.getElementById('pos-val').innerText = `${robotPos.x}, ${robotPos.y}`;
+            document.getElementById('dir-val').innerText = direction.toUpperCase();
+            document.getElementById('fuel-val').innerText = fuel;
+            document.getElementById('energy-val').innerText = `${mapData.items.length - items.length}/${mapData.items.length}`;
+            document.getElementById('fuel-val').style.color = fuel < 15 ? 'var(--danger)' : 'var(--fuel)';
+        }
+
+        function render() {
+            const grid = document.getElementById('grid');
+            grid.style.gridTemplateColumns = `repeat(${gridSize}, 50px)`;
+            grid.innerHTML = '';
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.innerHTML = `<span class="coord-hint">${x},${y}</span>`;
+                    
+                    if (x === robotPos.x && y === robotPos.y) {
+                        cell.classList.add('robot');
+                        cell.innerHTML += '🤖';
+                        cell.style.transform = `rotate(${(['up','right','down','left'].indexOf(direction)-1)*90}deg)`;
+                    } else if (x === goalPos.x && y === goalPos.y) {
+                        cell.className += ' goal' + (items.length === 0 ? ' active' : '');
+                        cell.innerHTML += '🌀';
+                    } else if (walls.some(w => w.x === x && w.y === y)) cell.classList.add('wall');
+                    else if (items.some(i => i.x === x && i.y === y)) cell.innerHTML += '⚡';
+                    else if (mines.some(m => m.x === x && m.y === y)) cell.innerHTML += '☢️';
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        async function runCode() {
+            if (isRunning) return;
+            loadMap();
+            const instructions = parse(document.getElementById('code-editor').value);
+            if (instructions.length === 0) { log("Lỗi: Bạn chưa nhập code!"); return; }
+            
+            isRunning = true;
+            document.getElementById('run-btn').disabled = true;
+            log("Đang thực thi chương trình...");
+
+            try {
+                for (let cmd of instructions) {
+                    if (fuel <= 0) throw "HẾT NHIÊN LIỆU!";
+                    await new Promise(r => setTimeout(r, 200));
+                    
+                    if (typeof cmd === 'object') {
+                        if ((cmd.cond === 'wall' && isWall()) || (cmd.cond === 'free' && !isWall())) {
+                            for (let s of cmd.content) { 
+                                if (fuel <= 0) break;
+                                await exec(s); updateStats(); render(); 
+                                await new Promise(r => setTimeout(r, 150)); 
+                            }
+                        }
+                    } else { await exec(cmd); }
+                    
+                    let itmIdx = items.findIndex(i => i.x === robotPos.x && i.y === robotPos.y);
+                    if (itmIdx !== -1) { items.splice(itmIdx, 1); log("Đã nạp thêm pin."); }
+                    if (mines.some(m => m.x === robotPos.x && m.y === robotPos.y)) throw "CẢNH BÁO: Đã đạp mìn!";
+
+                    updateStats(); render();
+                    if (robotPos.x === goalPos.x && robotPos.y === goalPos.y) {
+                        if (items.length > 0) throw "Portal chưa mở! Hãy ăn hết pin.";
+                        log("MÀN CHƠI HOÀN TẤT!");
+                        currentLevel++;
+                        localStorage.setItem('robot_v3_lvl', currentLevel);
+                        setTimeout(createMap, 1000);
+                        isRunning = false; document.getElementById('run-btn').disabled = false; return;
+                    }
+                }
+                log("Dừng chương trình. Robot chưa đến đích.");
+            } catch (e) { log("DỪNG KHẨN CẤP: " + e); }
+            isRunning = false; document.getElementById('run-btn').disabled = false;
+        }
+
+        async function exec(c) {
+            fuel--;
+            if (c === 'move') {
+                let nx = robotPos.x, ny = robotPos.y;
+                if (direction === 'right') nx++; else if (direction === 'left') nx--;
+                else if (direction === 'up') ny--; else if (direction === 'down') ny++;
+                if (nx < 0 || nx >= gridSize || ny < 0 || ny >= gridSize || walls.some(w => w.x === nx && w.y === ny)) throw "VA CHẠM TƯỜNG!";
+                robotPos.x = nx; robotPos.y = ny;
+            } else if (c === 'right' || c === 'left') {
+                let os = ['up','right','down','left'];
+                direction = (c === 'right') ? os[(os.indexOf(direction)+1)%4] : os[(os.indexOf(direction)+3)%4];
+            }
+        }
+
+        function isWall() {
+            let nx = robotPos.x, ny = robotPos.y;
+            if (direction === 'right') nx++; else if (direction === 'left') nx--;
+            else if (direction === 'up') ny--; else if (direction === 'down') ny++;
+            return (nx < 0 || nx >= gridSize || ny < 0 || ny >= gridSize || walls.some(w => w.x === nx && w.y === ny));
+        }
+
+        function parse(t) {
+            let tk = t.toLowerCase().replace(/\{/g,' { ').replace(/\}/g,' } ').split(/\s+/).filter(x => x!=="");
+            let res = [];
+            for (let i=0; i<tk.length; i++) {
+                if (tk[i]==='repeat') {
+                    let n = parseInt(tk[i+1])||0; let b = getB(tk, i+2);
+                    for(let j=0; j<n; j++) res.push(...b.c); i = b.e;
+                } else if (tk[i]==='if') {
+                    let c = tk[i+1]; let b = getB(tk, i+2);
+                    res.push({type:'if', cond:c, content:b.c}); i = b.e;
+                } else if (['move','left','right'].includes(tk[i])) res.push(tk[i]);
+            }
+            return res;
+        }
+        function getB(tk, s) {
+            let c = [], d = 0, i = s;
+            for (; i < tk.length; i++) {
+                if (tk[i]==='{') { d++; if(d===1) continue; }
+                if (tk[i]==='}') { d--; if(d===0) break; }
+                c.push(tk[i]);
+            }
+            return { c: parse(c.join(' ')), e: i };
+        }
+        function addCode(c) { 
+            const ed = document.getElementById('code-editor');
+            ed.value += c + "\n"; ed.focus();
+        }
+        function log(m) { document.getElementById('terminal').innerText = "> " + m; }
+        function resetData() { localStorage.clear(); location.reload(); }
+
+        createMap();
+    </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Support Chatbot</title>
+    <style>
+        /* CSS: Giao diện khung chat */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; }
+
+        /* Nút mở chat */
+        #chat-circle {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: #007bff; color: white; display: flex;
+            align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 24px; z-index: 1000;
+        }
+
+        /* Khung cửa sổ chat */
+        #chat-box {
+            position: fixed; bottom: 90px; right: 20px;
+            width: 350px; max-height: 500px;
+            background: white; border-radius: 15px;
+            display: none; flex-direction: column;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            overflow: hidden; z-index: 1000;
+        }
+
+        .chat-header { background: #007bff; color: white; padding: 15px; font-weight: bold; }
+
+        #chat-messages {
+            flex: 1; padding: 15px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 10px;
+            min-height: 300px; max-height: 400px; background: #f9f9f9;
+        }
+
+        /* Bong bóng tin nhắn */
+        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+        .user-msg { align-self: flex-end; background: #007bff; color: white; }
+        .ai-msg { align-self: flex-start; background: #e4e6eb; color: #050505; }
+
+        .chat-input-area { border-top: 1px solid #eee; padding: 10px; display: flex; }
+        #user-input { flex: 1; border: none; outline: none; padding: 5px; }
+        #send-btn { background: none; border: none; color: #007bff; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="chat-circle">💬</div>
+
+<div id="chat-box">
+    <div class="chat-header">Trợ lý AI Hỗ trợ</div>
+    <div id="chat-messages">
+        <div class="message ai-msg">Xin chào! Tôi có thể giúp gì cho bạn?</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="Nhập câu hỏi...">
+        <button id="send-btn">Gửi</button>
+    </div>
+</div>
+
+<script>
+    const chatCircle = document.getElementById('chat-circle');
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // 1. Đóng/Mở chat
+    chatCircle.onclick = () => {
+        chatBox.style.display = chatBox.style.display === 'none' || chatBox.style.display === '' ? 'flex' : 'none';
+    };
+
+    // 2. Hàm thêm tin nhắn vào màn hình
+    function appendMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
+        msgDiv.innerText = text;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // 3. Hàm gọi API ChatGPT
+    async function callGemini(question) {
+        const API_KEY = "THAY_MA_API_CUA_BAN_TAI_DAY"; // Lưu ý: Xem hướng dẫn bảo mật bên dưới
+        
+        try {
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        { role: "system", content: "Bạn là trợ lý hỗ trợ khách hàng chuyên nghiệp, trả lời ngắn gọn, lịch sự bằng tiếng Việt." },
+                        { role: "user", content: question }
+                    ],
+                    temperature: 0.7
+                })
+            });
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (error) {
+            return "Xin lỗi, tôi đang gặp chút sự cố kết nối. Vui lòng thử lại sau!";
+        }
+    }
+
+    // 4. Xử lý sự kiện gửi tin nhắn
+    async function handleSend() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        appendMessage('user', text);
+        userInput.value = '';
+
+        const aiResponse = await callChatGPT(text);
+        appendMessage('ai', aiResponse);
+    }
+
+    sendBtn.onclick = handleSend;
+    userInput.onkeypress = (e) => { if (e.key === 'Enter') handleSend(); };
+
+</script>
+</body>
+</html>

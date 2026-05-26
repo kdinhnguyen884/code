@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Cyber Runner: Soul of the Game</title>
+
+<style>
+body{
+margin:0;
+background:#050510;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+overflow:hidden;
+font-family:Segoe UI;
+}
+
+canvas{
+background:linear-gradient(#000428,#001a33);
+border-bottom:5px solid #00d4ff;
+box-shadow:0 0 30px rgba(0,212,255,0.2);
+}
+
+#ui{
+position:absolute;
+top:20px;
+left:30px;
+color:white;
+pointer-events:none;
+z-index:100;
+}
+
+#boss-ui{
+position:absolute;
+top:20px;
+width:600px;
+left:50%;
+transform:translateX(-50%);
+text-align:center;
+}
+
+.hp-bg{
+width:100%;
+height:15px;
+background:#300;
+border:2px solid #ff004c;
+border-radius:10px;
+overflow:hidden;
+}
+
+#boss-hp-bar{
+width:100%;
+height:100%;
+background:#ff004c;
+transition:0.1s;
+}
+
+#msg{
+position:absolute;
+color:#ff004c;
+font-size:45px;
+font-weight:bold;
+display:none;
+text-shadow:0 0 20px red;
+text-align:center;
+z-index:100;
+}
+</style>
+</head>
+
+<body>
+
+<div id="ui">
+<div style="font-size:20px;font-weight:bold;">
+SCORE: <span id="dist">0</span>
+</div>
+<div style="font-size:12px;color:#ff00ff;">
+S: BẮN | SHIFT: LƯỚT | SPACE: NHẢY
+</div>
+</div>
+
+<div id="boss-ui">
+<div style="color:#ff004c;font-size:12px;font-weight:bold;margin-bottom:5px;">
+VOID GUARDIAN
+</div>
+<div class="hp-bg">
+<div id="boss-hp-bar"></div>
+</div>
+</div>
+
+<div id="msg">
+SYSTEM CRITICAL
+<div style="font-size:20px;color:white">
+NHẤN [ SPACE ] ĐỂ HỒI SINH
+</div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+canvas.width=900;
+canvas.height=420;
+
+let gameActive;
+let speed;
+let distance;
+
+let player;
+let boss;
+
+let platforms=[];
+let stars=[];
+let bullets=[];
+let bombs=[];
+let spikeWall;
+
+let stamina=100;
+let shake=0;
+
+let overdriveCooldown=0;
+let overdriveActive=false;
+
+function initGame(){
+
+gameActive=true;
+speed=6;
+distance=0;
+
+stamina=100;
+shake=0;
+
+bullets=[];
+bombs=[];
+stars=[];
+
+player={
+x:150,
+y:200,
+w:30,
+h:50,
+dy:0,
+gravity:0.7,
+jump:13,
+jumps:0,
+isDashing:false
+};
+
+boss={
+x:750,
+y:150,
+w:80,
+h:80,
+hp:100,
+maxHp:100,
+shootTimer:0
+};
+
+spikeWall={x:-600};
+
+platforms=[
+{x:0,y:320,w:500,h:100,spikes:[]},
+{x:600,y:260,w:400,h:200,spikes:[{offset:100}]}
+];
+
+for(let i=0;i<80;i++){
+stars.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+s:Math.random()*2
+});
+}
+
+document.getElementById("msg").style.display="none";
+updateBossHP();
+
+}
+
+function updateBossHP(){
+document.getElementById("boss-hp-bar").style.width=(boss.hp/boss.maxHp*100)+"%";
+}
+
+window.onkeydown=e=>{
+
+if(!gameActive && e.code==="Space") initGame();
+
+if(gameActive){
+
+if(e.code==="Space") jump();
+if(e.code==="KeyS") shoot();
+if(e.code==="Shift") dash();
+
+}
+
+};
+
+function jump(){
+
+if(player.jumps<2){
+player.dy=-player.jump;
+player.jumps++;
+}
+
+}
+
+function shoot(){
+
+bullets.push({
+x:player.x+player.w,
+y:player.y+20,
+vx:15
+});
+
+}
+
+function dash(){
+
+if(stamina>=30){
+
+stamina-=30;
+player.isDashing=true;
+overdriveActive=true;
+
+setTimeout(()=>{
+player.isDashing=false;
+overdriveActive=false;
+},300);
+
+}
+
+}
+
+function update(){
+
+if(!gameActive) return;
+
+if(stamina<100) stamina+=0.4;
+
+distance++;
+document.getElementById("dist").innerText=Math.floor(distance/10);
+
+let curSpeed=overdriveActive ? speed*2 : speed;
+
+speed+=0.001;
+
+player.dy+=player.gravity;
+player.y+=player.dy;
+
+spikeWall.x+=speed*0.15;
+
+boss.shootTimer++;
+boss.y+=Math.sin(Date.now()/500)*1.5;
+
+if(boss.shootTimer>70){
+
+bombs.push({
+x:boss.x,
+y:boss.y+40,
+vx:-(6+Math.random()*4),
+vy:-3
+});
+
+boss.shootTimer=0;
+
+}
+
+platforms.forEach(p=>{
+
+p.x-=curSpeed;
+
+if(
+player.x<p.x+p.w &&
+player.x+player.w>p.x &&
+player.y+player.h>p.y &&
+player.y+player.h<p.y+player.dy+10
+){
+
+player.y=p.y-player.h;
+player.dy=0;
+player.jumps=0;
+
+}
+
+if(!player.isDashing){
+
+p.spikes.forEach(s=>{
+
+let sx=p.x+s.offset;
+
+if(
+player.x<sx+20 &&
+player.x+player.w>sx &&
+player.y+player.h>p.y-20 &&
+player.y<p.y
+){
+gameOver();
+}
+
+});
+
+}
+
+});
+
+if(platforms[platforms.length-1].x<canvas.width){
+
+let newW=300+Math.random()*300;
+
+let hasSpike=Math.random()>0.5
+?[{offset:50+Math.random()*(newW-100)}]
+:[];
+
+platforms.push({
+x:canvas.width+100,
+y:200+Math.random()*120,
+w:newW,
+h:250,
+spikes:hasSpike
+});
+
+}
+
+if(platforms[0].x+platforms[0].w<0)
+platforms.shift();
+
+bullets.forEach((b,i)=>{
+
+b.x+=b.vx;
+
+if(
+b.x>boss.x &&
+b.y>boss.y &&
+b.y<boss.y+boss.h
+){
+
+boss.hp-=4;
+shake=10;
+
+updateBossHP();
+bullets.splice(i,1);
+
+if(boss.hp<=0){
+
+boss.hp=100;
+speed+=1;
+distance+=2000;
+
+updateBossHP();
+
+}
+
+}
+
+if(b.x>canvas.width)
+bullets.splice(i,1);
+
+});
+
+bombs.forEach((b,i)=>{
+
+b.x+=b.vx;
+b.y+=b.vy;
+b.vy+=0.12;
+
+if(
+!player.isDashing &&
+Math.abs(player.x-b.x)<25 &&
+Math.abs(player.y-b.y)<25
+){
+gameOver();
+}
+
+if(b.y>canvas.height)
+bombs.splice(i,1);
+
+});
+
+if(!player.isDashing && player.x<spikeWall.x+20)
+gameOver();
+
+if(player.y>canvas.height)
+gameOver();
+
+if(shake>0) shake--;
+
+}
+
+function gameOver(){
+
+gameActive=false;
+document.getElementById("msg").style.display="block";
+
+}
+
+function draw(){
+
+ctx.save();
+
+if(shake>0){
+ctx.translate(
+Math.random()*shake-shake/2,
+Math.random()*shake-shake/2
+);
+}
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ctx.fillStyle="white";
+
+stars.forEach(s=>{
+s.x-=s.s*speed*0.1;
+if(s.x<0) s.x=canvas.width;
+ctx.fillRect(s.x,s.y,s.s,s.s);
+});
+
+platforms.forEach(p=>{
+ctx.fillStyle="#02020a";
+ctx.fillRect(p.x,p.y,p.w,p.h);
+
+ctx.strokeStyle="#00d4ff";
+ctx.strokeRect(p.x,p.y,p.w,p.h);
+});
+
+ctx.fillStyle="#ff004c";
+
+platforms.forEach(p=>{
+p.spikes.forEach(s=>{
+ctx.beginPath();
+ctx.moveTo(p.x+s.offset,p.y);
+ctx.lineTo(p.x+s.offset+10,p.y-25);
+ctx.lineTo(p.x+s.offset+20,p.y);
+ctx.fill();
+});
+});
+
+ctx.save();
+
+ctx.translate(player.x+player.w/2,player.y+player.h/2);
+
+if(player.isDashing)
+ctx.scale(1.6,0.7);
+
+ctx.fillStyle="white";
+
+ctx.fillRect(
+-player.w/2,
+-player.h/2,
+player.w,
+player.h
+);
+
+ctx.restore();
+
+ctx.fillStyle="#ff004c";
+ctx.fillRect(boss.x,boss.y,boss.w,boss.h);
+
+ctx.fillStyle="white";
+ctx.fillRect(boss.x+15,boss.y+20,15,15);
+ctx.fillRect(boss.x+50,boss.y+20,15,15);
+
+ctx.fillStyle="#ff004c";
+
+for(let y=0;y<canvas.height;y+=25){
+
+ctx.beginPath();
+ctx.moveTo(spikeWall.x,y);
+ctx.lineTo(spikeWall.x+25,y+12);
+ctx.lineTo(spikeWall.x,y+25);
+ctx.fill();
+
+}
+
+ctx.fillStyle="#00ffcc";
+bullets.forEach(b=>ctx.fillRect(b.x,b.y,15,5));
+
+ctx.fillStyle="#ffcc00";
+bombs.forEach(b=>{
+ctx.beginPath();
+ctx.arc(b.x,b.y,12,0,Math.PI*2);
+ctx.fill();
+});
+
+ctx.fillStyle="#555";
+ctx.fillRect(player.x,player.y+player.h+10,30,4);
+
+ctx.fillStyle="#ff00ff";
+ctx.fillRect(player.x,player.y+player.h+10,(stamina/100)*30,4);
+
+ctx.restore();
+
+if(gameActive) update();
+
+requestAnimationFrame(draw);
+
+}
+
+initGame();
+draw();
+
+</script>
+</body>
+</html>

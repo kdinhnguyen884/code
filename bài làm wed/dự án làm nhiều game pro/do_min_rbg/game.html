@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Minesweeper RPG: Ultimate Edition</title>
+    <style>
+        :root { --dark: #121212; --bg: #1e1e2e; --tile: #282a36; --revealed: #44475a; --text: #f8f8f2; --gold: #f1fa8c; --hp: #ff5555; }
+        body { background: var(--dark); color: var(--text); font-family: 'Consolas', monospace; text-align: center; margin: 0; overflow-x: hidden; user-select: none; }
+        
+        /* Hiệu ứng rung màn hình */
+        .shake { animation: shake-animation 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake-animation {
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            20%, 60% { transform: translate3d(-5px, 2px, 0); }
+            40%, 80% { transform: translate3d(5px, -2px, 0); }
+        }
+
+        #header { background: var(--bg); padding: 15px; border-bottom: 3px solid #6272a4; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .stats-container { display: flex; justify-content: center; align-items: center; gap: 20px; max-width: 600px; margin: 0 auto; }
+        
+        /* Thanh Máu Player */
+        .hp-container { width: 200px; background: #333; border: 2px solid #555; border-radius: 10px; overflow: hidden; position: relative; height: 20px; }
+        #hp-fill { height: 100%; background: var(--hp); transition: width 0.3s ease; width: 100%; }
+        .hp-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 0.9rem; font-weight: bold; line-height: 20px; text-shadow: 1px 1px 0 #000; }
+        
+        .stat-item { font-size: 1.1rem; font-weight: bold; }
+        .gold-txt { color: var(--gold); }
+
+        /* Tools & Skills */
+        #toolbar { margin: 15px; display: flex; justify-content: center; gap: 15px; }
+        .btn { background: #44475a; color: var(--text); border: 2px solid #6272a4; padding: 8px 15px; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn:hover:not(:disabled) { background: #6272a4; transform: translateY(-2px); }
+        .btn.active { background: #50fa7b; color: #282a36; border-color: #50fa7b; box-shadow: 0 0 10px #50fa7b; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Grid */
+        #grid { display: grid; margin: 10px auto; background: #000; padding: 8px; border: 4px solid #44475a; border-radius: 8px; width: fit-content; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .cell { width: 35px; height: 35px; background: var(--tile); border: 1px solid #1e1e2e; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; transition: background 0.1s; border-radius: 4px; }
+        .cell:hover { background: #383a59; }
+        .cell.revealed { background: var(--revealed); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
+        .cell.boss { background: #ff5555 !important; font-size: 1.6rem; text-shadow: 0 0 5px #000; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); } 50% { transform: scale(1.05); } 100% { transform: scale(0.95); } }
+
+        /* Boss HP UI */
+        #boss-ui { display: none; width: 300px; height: 15px; background: #222; margin: 10px auto; border: 2px solid #ff5555; border-radius: 5px; overflow: hidden; position: relative; }
+        #boss-hp-fill { height: 100%; background: #ff5555; transition: 0.3s; width: 100%; }
+
+        /* Shop */
+        #shop-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        .shop-item { background: #282a36; padding: 15px; margin: 10px; border: 2px solid var(--gold); width: 350px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
+        
+        #log { width: 90%; max-width: 600px; height: 100px; background: #000; margin: 10px auto; padding: 10px; overflow-y: auto; text-align: left; font-size: 0.9rem; border: 1px solid #6272a4; color: #8be9fd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h2 style="margin-top:0;">TẦNG <span id="lvl-display">1</span></h2>
+        <div class="stats-container">
+            <div class="hp-container">
+                <div id="hp-fill"></div>
+                <div class="hp-text">HP: <span id="hp">100</span>/<span id="max-hp">100</span></div>
+            </div>
+            <div class="stat-item">⚔️ <span id="atk">15</span></div>
+            <div class="stat-item gold-txt">💰 <span id="gold">0</span></div>
+        </div>
+        <div id="boss-ui"><div id="boss-hp-fill"></div></div>
+    </div>
+
+    <div id="toolbar">
+        <button id="skill-scan" class="btn" onclick="useSkill('scan')">🔍 MÁY QUÉT (20G)</button>
+        <button id="skill-shield" class="btn" onclick="useSkill('shield')">🛡️ KHIÊN (50G)</button>
+        <button id="item-pickaxe" class="btn" onclick="togglePickaxe()">🔨 BÚA PHÁ ĐÁ: <span id="pickaxe-count">1</span></button>
+    </div>
+
+    <div id="grid"></div>
+    <div id="log">> Dungeon đã được tạo. Sẵn sàng chiến đấu!</div>
+
+    <div id="shop-overlay">
+        <h1 style="color:var(--gold)">🛒 THƯƠNG NHÂN BÓNG ĐÊM</h1>
+        <div class="shop-item"><span>❤️ Hồi 30 HP</span><button class="btn" onclick="buyItem('hp', 30)">30G</button></div>
+        <div class="shop-item"><span>⚔️ Mài vũ khí (+5 ATK)</span><button class="btn" onclick="buyItem('atk', 50)">50G</button></div>
+        <div class="shop-item"><span>🔨 Mua 1 Búa Phá Đá</span><button class="btn" onclick="buyItem('pickaxe', 40)">40G</button></div>
+        <button class="btn" onclick="nextLevel()" style="margin-top:20px; padding: 15px 40px; background: #50fa7b; color:#282a36;">XUỐNG TẦNG TIẾP THEO</button>
+    </div>
+
+<script>
+const SIZE = 12;
+let board = [], isOver = false, usePickaxeMode = false;
+let player = { hp: 100, maxHp: 100, atk: 15, gold: 50, level: 1, shield: false, pickaxe: 1 };
+let bossInfo = null;
+
+function initGame() {
+    isOver = false; usePickaxeMode = false; bossInfo = null;
+    document.getElementById('shop-overlay').style.display = 'none';
+    document.getElementById('boss-ui').style.display = 'none';
+    
+    board = Array.from({length: SIZE}, () => Array.from({length: SIZE}, () => ({
+        type: 'empty', revealed: false, count: 0
+    })));
+
+    // 1. Sinh Boss (Mỗi 3 tầng)
+    if (player.level % 3 === 0) {
+        bossInfo = { hp: 100 + player.level*10, maxHp: 100 + player.level*10 };
+        const br = Math.floor(SIZE/2)-1, bc = Math.floor(SIZE/2)-1;
+        for(let r=br; r<=br+1; r++) for(let c=bc; c<=bc+1; c++) board[r][c].type = 'boss';
+        document.getElementById('boss-ui').style.display = 'block';
+        addLog("CẢNH BÁO: Thực thể Boss cổ đại đã thức tỉnh!", "#ff5555");
+    }
+
+    // 2. Sinh Quái & Bẫy ngầm
+    let enemyCount = 10 + Math.floor(player.level * 1.5);
+    let trapCount = Math.floor(player.level / 2); // Càng sâu càng nhiều bẫy
+    
+    placeEntities('enemy', enemyCount);
+    placeEntities('trap', trapCount);
+
+    // 3. Tính toán manh mối (Chỉ đếm Quái & Boss, KHÔNG đếm Bẫy)
+    for(let r=0; r<SIZE; r++) {
+        for(let c=0; c<SIZE; c++) {
+            if(board[r][c].type === 'empty' || board[r][c].type === 'trap') {
+                let count = 0;
+                for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++) {
+                    let t = board[r+i]?.[c+j]?.type;
+                    if(t === 'enemy' || t === 'boss') count++;
+                }
+                board[r][c].count = count;
+            }
+        }
+    }
+    updateUI(); render();
+}
+
+function placeEntities(type, count) {
+    let placed = 0;
+    while(placed < count) {
+        let r = Math.floor(Math.random()*SIZE), c = Math.floor(Math.random()*SIZE);
+        if(board[r][c].type === 'empty') { board[r][c].type = type; placed++; }
+    }
+}
+
+function render() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = ''; grid.style.gridTemplateColumns = `repeat(${SIZE}, 35px)`;
+
+    board.forEach((row, r) => row.forEach((cell, c) => {
+        const div = document.createElement('div');
+        div.className = 'cell' + (cell.revealed ? ' revealed' : '') + (cell.type === 'boss' ? ' boss' : '');
+        
+        if(cell.revealed) {
+            if(cell.type === 'enemy') div.innerHTML = '👾';
+            else if(cell.type === 'boss') div.innerHTML = '💀';
+            else if(cell.type === 'trap') div.innerHTML = '☠️';
+            else {
+                div.innerText = cell.count || '';
+                div.style.color = ["", "#8be9fd", "#50fa7b", "#ffb86c", "#ff79c6"][cell.count] || "#fff";
+            }
+        }
+        div.onclick = () => handleAction(r, c);
+        grid.appendChild(div);
+    }));
+}
+
+function handleAction(r, c) {
+    if(isOver) return;
+    const cell = board[r][c];
+
+    // Chế độ dùng BÚA PHÁ ĐÁ
+    if (usePickaxeMode) {
+        usePickaxeMode = false;
+        document.getElementById('item-pickaxe').classList.remove('active');
+        if(!cell.revealed || cell.type === 'boss') {
+            player.pickaxe--;
+            cell.revealed = true;
+            if(cell.type === 'boss') {
+                bossInfo.hp -= 50;
+                addLog("🔨 Búa tạ đập thẳng mặt Boss! -50 HP", "#f1fa8c");
+            } else if (cell.type === 'enemy' || cell.type === 'trap') {
+                addLog("🔨 Đã nghiền nát một mối đe dọa an toàn!", "#50fa7b");
+                cell.type = 'empty'; // Xóa quái
+            } else {
+                addLog("🔨 Đập tan đất đá...", "#f8f8f2");
+                if(cell.count === 0) floodReveal(r, c);
+            }
+            endActionLogic();
+            return;
+        }
+    }
+
+    if(cell.revealed && cell.type !== 'boss') return;
+    cell.revealed = true;
+
+    if(cell.type === 'enemy') {
+        takeDamage(Math.max(10, (25 + player.level*2) - Math.floor(player.atk/2)), "Đụng quái!");
+    } else if (cell.type === 'trap') {
+        takeDamage(15, "Đạp trúng bẫy ngầm độc!");
+    } else if(cell.type === 'boss') {
+        takeDamage(20, "Boss phản công!");
+        bossInfo.hp -= player.atk;
+        player.gold += 30;
+        addLog(`Chém Boss! Gây ${player.atk} DMG, nhận 30G`, "#f1fa8c");
+    } else {
+        player.gold += 4;
+        if(cell.count === 0) floodReveal(r, c);
+    }
+    
+    endActionLogic();
+}
+
+function takeDamage(dmg, msg) {
+    if(player.shield) {
+        addLog("🛡️ Khiên năng lượng đã đỡ đòn!", "#8be9fd");
+        player.shield = false;
+    } else {
+        player.hp -= dmg;
+        addLog(`❌ ${msg} Mất ${dmg} HP.`, "#ff5555");
+        screenShake();
+    }
+}
+
+function endActionLogic() {
+    if(bossInfo && bossInfo.hp <= 0) {
+        addLog("🏆 BOSS ĐÃ BỊ HẠ GỤC!", "#50fa7b");
+        board.forEach(row => row.forEach(c => { if(c.type === 'boss') c.type = 'empty'; }));
+        bossInfo = null;
+        document.getElementById('boss-ui').style.display = 'none';
+    }
+
+    if(player.hp <= 0) {
+        player.hp = 0; isOver = true; updateUI(); render();
+        addLog("💀 BẠN ĐÃ TỬ TRẬN. F5 để chơi lại.", "#ff5555");
+        return;
+    }
+    
+    updateUI(); render();
+    checkClear();
+}
+
+function togglePickaxe() {
+    if(player.pickaxe > 0) {
+        usePickaxeMode = !usePickaxeMode;
+        document.getElementById('item-pickaxe').classList.toggle('active', usePickaxeMode);
+        if(usePickaxeMode) addLog("🔨 Búa đã sẵn sàng. Chọn 1 ô để đập!", "#f1fa8c");
+    }
+}
+
+function useSkill(type) {
+    if(type === 'scan' && player.gold >= 20) {
+        player.gold -= 20; addLog("🔍 Quét thành công 3 ô an toàn.", "#8be9fd");
+        for(let i=0, opened=0; i<100 && opened<3; i++) {
+            let r=Math.floor(Math.random()*SIZE), c=Math.floor(Math.random()*SIZE);
+            if(!board[r][c].revealed && board[r][c].type === 'empty') {
+                board[r][c].revealed = true; opened++;
+                if(board[r][c].count === 0) floodReveal(r, c);
+            }
+        }
+    } else if(type === 'shield' && player.gold >= 50) {
+        player.gold -= 50; player.shield = true; addLog("🛡️ Kích hoạt khiên!", "#50fa7b");
+    }
+    updateUI(); render();
+}
+
+function buyItem(type, cost) {
+    if(player.gold < cost) return addLog("Nghèo thì đừng đú!", "#6272a4");
+    player.gold -= cost;
+    if(type === 'hp') player.hp = Math.min(player.maxHp, player.hp + 30);
+    if(type === 'atk') player.atk += 5;
+    if(type === 'pickaxe') player.pickaxe++;
+    updateUI(); addLog("Mua hàng thành công!", "#50fa7b");
+}
+
+function floodReveal(r, c) {
+    for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++) {
+        let nr=r+i, nc=c+j;
+        if(board[nr]?.[nc] && !board[nr][nc].revealed && board[nr][nc].type !== 'enemy' && board[nr][nc].type !== 'boss') {
+            board[nr][nc].revealed = true;
+            if(board[nr][nc].count === 0 && board[nr][nc].type !== 'trap') floodReveal(nr, nc);
+        }
+    }
+}
+
+function checkClear() {
+    const cleared = board.every(row => row.every(c => (c.type !== 'empty' && c.type !== 'trap') || c.revealed));
+    if(cleared && !bossInfo) {
+        addLog("✨ TẦNG ĐÃ DỌN SẠCH! Thương nhân xuất hiện.", "#f1fa8c");
+        setTimeout(() => document.getElementById('shop-overlay').style.display = 'flex', 1000);
+    }
+}
+
+function nextLevel() { player.level++; initGame(); }
+function screenShake() { document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 300); }
+
+function updateUI() {
+    document.getElementById('hp').innerText = player.hp;
+    document.getElementById('max-hp').innerText = player.maxHp;
+    document.getElementById('hp-fill').style.width = (player.hp/player.maxHp*100) + "%";
+    document.getElementById('atk').innerText = player.atk;
+    document.getElementById('gold').innerText = player.gold;
+    document.getElementById('lvl-display').innerText = player.level;
+    document.getElementById('pickaxe-count').innerText = player.pickaxe;
+    
+    document.getElementById('skill-scan').disabled = (player.gold < 20);
+    document.getElementById('skill-shield').disabled = (player.gold < 50 || player.shield);
+    document.getElementById('item-pickaxe').disabled = (player.pickaxe <= 0);
+    
+    if(player.shield) document.getElementById('skill-shield').classList.add('active');
+    else document.getElementById('skill-shield').classList.remove('active');
+
+    if(bossInfo) document.getElementById('boss-hp-fill').style.width = (bossInfo.hp/bossInfo.maxHp*100) + "%";
+}
+
+function addLog(msg, color) {
+    const log = document.getElementById('log');
+    log.innerHTML = `<span style="color:${color}">> ${msg}</span><br>` + log.innerHTML;
+}
+
+initGame();
+</script>
+</body>
+</html>

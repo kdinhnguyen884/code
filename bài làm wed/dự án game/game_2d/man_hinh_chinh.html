@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Survival: Kiếm Sĩ Vùng Đất Quái Vật</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; color: white; font-family: sans-serif; overflow: hidden; user-select: none; }
+        canvas { background: #222; border: 4px solid #333; margin-top: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.7); cursor: crosshair; }
+        .info { position: absolute; top: 10px; left: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; }
+        #score, #timer { font-weight: bold; color: #f1c40f; }
+    </style>
+</head>
+<body>
+
+    <div class="info">
+        <h1>Điểm: <span id="score">0</span> | Time: <span id="timer">0</span>s</h1>
+        <p>Di chuyển: [WASD] hoặc [Mũi tên] | <strong>Tấn công: [Click Chuột Trái]</strong></p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const timerElement = document.getElementById("timer");
+    const scoreElement = document.getElementById("score");
+
+    canvas.width = 1000; // Mở rộng màn hình chơi
+    canvas.height = 700;
+
+    let gameActive = true;
+    let startTime = Date.now();
+    let frameCount = 0;
+    let score = 0;
+
+    // --- CẤU HÌNH NGƯỜI CHƠI ---
+    const player = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        size: 20, // Bán kính nhân vật
+        color: "#00d2ff",
+        speed: 5,
+        dx: 0, dy: 0,
+        // Cấu hình kỹ năng chém
+        isAttacking: false,
+        attackRadius: 80, // Tầm chém
+        attackDuration: 150, // Thời gian hiệu ứng chém (ms)
+        attackCooldown: 400, // Thời gian hồi chiêu (ms)
+        lastAttackTime: 0
+    };
+
+    // --- QUẢN LÝ QUÁI VẬT ---
+    let enemies = [];
+    const enemyBaseSpeed = 2;
+
+    function createEnemy() {
+        // Sinh quái vật ngẫu nhiên ở ngoài mép màn hình
+        let x, y;
+        if (Math.random() < 0.5) {
+            x = Math.random() < 0.5 ? -40 : canvas.width + 40;
+            y = Math.random() * canvas.height;
+        } else {
+            x = Math.random() * canvas.width;
+            y = Math.random() < 0.5 ? -40 : canvas.height + 40;
+        }
+        
+        enemies.push({
+            x: x,
+            y: y,
+            size: 15, // Bán kính quái
+            color: "#ff4757",
+            // Tốc độ quái tăng nhẹ theo thời gian sống sót
+            speed: enemyBaseSpeed + (Math.floor((Date.now() - startTime)/1000) * 0.05)
+        });
+    }
+
+    // --- LOGIC XỬ LÝ TẤN CÔNG (CHẾM) ---
+    function performAttack() {
+        const now = Date.now();
+        // Kiểm tra hồi chiêu
+        if (now - player.lastAttackTime < player.attackCooldown) return;
+
+        player.isAttacking = true;
+        player.lastAttackTime = now;
+
+        // Xử lý tiêu diệt quái vật trong vùng chém
+        // Chúng ta lặp ngược mảng để xóa phần tử không bị lỗi index
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const enemy = enemies[i];
+            const dx = enemy.x - player.x;
+            const dy = enemy.y - player.y;
+            // Tính khoảng cách tâm đến tâm
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Nếu quái vật nằm trong tầm chém (có tính đến kích thước quái)
+            if (distance < player.attackRadius + enemy.size) {
+                enemies.splice(i, 1); // Xóa quái
+                score += 10; // Cộng điểm
+                scoreElement.innerText = score;
+            }
+        }
+
+        // Tự động tắt hiệu ứng chém sau một khoảng thời gian ngắn
+        setTimeout(() => {
+            player.isAttacking = false;
+        }, player.attackDuration);
+    }
+
+    // --- CẬP NHẬT TRẠNG THÁI GAME ---
+    function update() {
+        if (!gameActive) return;
+
+        // Di chuyển người chơi
+        player.x += player.dx;
+        player.y += player.dy;
+
+        // Chặn biên
+        player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+        player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+
+        // Di chuyển quái vật và kiểm tra va chạm với người chơi
+        enemies.forEach((enemy) => {
+            const dx = player.x - enemy.x;
+            const dy = player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Quái đuổi theo
+            enemy.x += (dx / distance) * enemy.speed;
+            enemy.y += (dy / distance) * enemy.speed;
+
+            // Kiểm tra va chạm: Người chơi thua
+            if (distance < (player.size + enemy.size)) {
+                gameActive = false;
+                alert(`GAME OVER!\nĐiểm của bạn: ${score}\nThời gian sống: ${timerElement.innerText} giây.`);
+                location.reload();
+            }
+        });
+
+        // Tăng độ khó: Sinh quái nhanh hơn theo thời gian
+        frameCount++;
+        let spawnRate = Math.max(20, 100 - Math.floor((Date.now() - startTime)/1000) * 2); 
+        if (frameCount % Math.floor(spawnRate) === 0) {
+            createEnemy();
+        }
+
+        // Cập nhật đồng hồ
+        timerElement.innerText = Math.floor((Date.now() - startTime) / 1000);
+    }
+
+    // --- VẼ ĐỒ HỌA ---
+    function draw() {
+        // Clear màn hình
+        ctx.fillStyle = "rgba(34, 34, 34, 0.3)"; // Tạo hiệu ứng lưu ảnh nhẹ (trail)
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Vẽ hiệu ứng chém (phải vẽ trước nhân vật để nhân vật đè lên)
+        if (player.isAttacking) {
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = "#fff";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; // Vòng tròn trong suốt
+            ctx.strokeStyle = "#fff"; // Viền trắng sáng
+            ctx.lineWidth = 3;
+
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.attackRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset shadow
+        }
+
+        // Vẽ người chơi (Hình tròn xanh Neon)
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = player.color;
+        ctx.fillStyle = player.color;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Vẽ quái vật (Hình tròn đỏ)
+        ctx.shadowColor = "#ff4757";
+        enemies.forEach(enemy => {
+            ctx.fillStyle = enemy.color;
+            ctx.beginPath();
+            ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        
+        ctx.shadowBlur = 0; // Reset shadow
+    }
+
+    // --- VÒNG LẶP CHÍNH ---
+    function gameLoop() {
+        update();
+        draw();
+        if (gameActive) requestAnimationFrame(gameLoop);
+    }
+
+    // --- XỬ LÝ SỰ KIỆN ĐIỀU KHIỂN ---
+    // Di chuyển (Bàn phím)
+    const keys = {};
+    window.addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true; updateVelocity(); });
+    window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; updateVelocity(); });
+
+    function updateVelocity() {
+        player.dx = 0;
+        player.dy = 0;
+        if (keys['w'] || keys['arrowup']) player.dy = -player.speed;
+        if (keys['s'] || keys['arrowdown']) player.dy = player.speed;
+        if (keys['a'] || keys['arrowleft']) player.dx = -player.speed;
+        if (keys['d'] || keys['arrowright']) player.dx = player.speed;
+        
+        // Bình phương hóa tốc độ khi đi chéo (để không bị đi nhanh hơn)
+        if (player.dx !== 0 && player.dy !== 0) {
+            player.dx *= 0.7071;
+            player.dy *= 0.7071;
+        }
+    }
+
+    // Tấn công (Chuột)
+    window.addEventListener("mousedown", (e) => {
+        if (e.button === 0) { // Chuột trái
+            performAttack();
+        }
+    });
+
+    // --- BẮT ĐẦU ---
+    // Sinh vài con quái ban đầu
+    for(let i=0; i<5; i++) createEnemy();
+    gameLoop();
+
+</script>
+</body>
+</html>

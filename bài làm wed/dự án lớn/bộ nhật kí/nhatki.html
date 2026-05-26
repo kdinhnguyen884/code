@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nhật Ký Học Tập</title>
+
+<style>
+:root{
+    --main:#2563eb;
+    --bg:#f1f5f9;
+    --card:#ffffff;
+    --text:#0f172a;
+}
+body.dark{
+    --bg:#0f172a;
+    --card:#1e293b;
+    --text:#e5e7eb;
+}
+
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:"Segoe UI",Arial;
+    background:var(--bg);
+    color:var(--text);
+    padding:16px;
+    transition:.3s;
+}
+.container{
+    max-width:900px;
+    margin:auto;
+}
+header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:16px;
+}
+header h1{margin:0;font-size:22px}
+.toggle{
+    cursor:pointer;
+    font-size:20px;
+}
+
+.streak{
+    background:linear-gradient(90deg,#f59e0b,#ef4444);
+    color:white;
+    padding:10px;
+    border-radius:12px;
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:16px;
+}
+
+.card{
+    background:var(--card);
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+    margin-bottom:16px;
+}
+
+input, textarea, select{
+    width:100%;
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #cbd5e1;
+    margin-top:8px;
+    font-size:15px;
+    background:transparent;
+    color:var(--text);
+}
+textarea{height:100px}
+
+button{
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+}
+.save{background:var(--main);color:white;margin-top:10px}
+.edit{background:#22c55e;color:white}
+.delete{background:#ef4444;color:white}
+
+.entry{
+    display:flex;
+    gap:12px;
+}
+.mood{font-size:36px}
+.entry-content{flex:1}
+.entry-title{font-weight:bold}
+.date{font-size:12px;color:#94a3b8;margin-bottom:6px}
+.actions button{margin-right:6px}
+
+@media (max-width:600px){
+    header h1{font-size:18px}
+    .entry{flex-direction:column}
+    .mood{font-size:30px}
+}
+</style>
+</head>
+
+<body>
+    <a href="../bộ home/dashboard.html"
+   style="position: fixed; top: 10px; left: 10px;
+   background: #2563EB; color: white;
+   padding: 5px 10px; border-radius: 5px;
+   text-decoration: none; z-index: 9999;">
+   &larr; Quay lại Home
+</a>
+
+<div class="container">
+
+<header>
+    <h1>📘 Nhật Ký Học Tập</h1>
+    <div class="toggle" onclick="toggleDark()">🌙</div>
+</header>
+
+<div class="streak" id="streak"></div>
+
+<div class="card">
+    <input id="search" placeholder="🔍 Tìm nhật ký...">
+
+    <input id="title" placeholder="Tiêu đề hôm nay">
+    <select id="mood">
+        <option value="😊">😊 Vui</option>
+        <option value="😐">😐 Bình thường</option>
+        <option value="😞">😞 Khó hiểu</option>
+        <option value="🤯">🤯 Căng não</option>
+    </select>
+    <textarea id="content" placeholder="Hôm nay bạn học được gì?"></textarea>
+
+    <button class="save" onclick="save()">💾 Lưu nhật ký</button>
+</div>
+
+<div id="list"></div>
+
+</div>
+
+<script>
+const KEY="study_diary_final";
+let diaries=JSON.parse(localStorage.getItem(KEY))||[];
+let editingId=null;
+
+const searchEl=search,listEl=list,streakEl=streak;
+
+function save(){
+    const titleEl=title,contentEl=content,moodEl=mood;
+    if(!titleEl.value||!contentEl.value) return alert("Nhập đủ nha!");
+
+    if(editingId){
+        let d=diaries.find(x=>x.id===editingId);
+        d.title=titleEl.value;
+        d.content=contentEl.value;
+        d.mood=moodEl.value;
+        editingId=null;
+    }else{
+        diaries.unshift({
+            id:Date.now(),
+            title:titleEl.value,
+            content:contentEl.value,
+            mood:moodEl.value,
+            date:new Date().toISOString().split("T")[0]
+        });
+    }
+
+    localStorage.setItem(KEY,JSON.stringify(diaries));
+    titleEl.value=contentEl.value="";
+    render();
+}
+
+function edit(id){
+    let d=diaries.find(x=>x.id===id);
+    title.value=d.title;
+    content.value=d.content;
+    mood.value=d.mood;
+    editingId=id;
+    window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function del(id){
+    if(confirm("Xóa nhật ký này?")){
+        diaries=diaries.filter(d=>d.id!==id);
+        localStorage.setItem(KEY,JSON.stringify(diaries));
+        render();
+    }
+}
+
+function render(){
+    const key=searchEl.value.toLowerCase();
+    listEl.innerHTML="";
+    diaries.filter(d=>
+        d.title.toLowerCase().includes(key)||
+        d.content.toLowerCase().includes(key)
+    ).forEach(d=>{
+        listEl.innerHTML+=`
+        <div class="card entry">
+            <div class="mood">${d.mood}</div>
+            <div class="entry-content">
+                <div class="entry-title">${d.title}</div>
+                <div class="date">📅 ${d.date}</div>
+                <div>${d.content}</div>
+                <div class="actions">
+                    <button class="edit" onclick="edit(${d.id})">✏️ Sửa</button>
+                    <button class="delete" onclick="del(${d.id})">🗑️ Xóa</button>
+                </div>
+            </div>
+        </div>`;
+    });
+    streak();
+}
+
+function streak(){
+    let dates=[...new Set(diaries.map(d=>d.date))];
+    let count=0,now=new Date();
+    for(let d of dates){
+        if((now-new Date(d))/86400000<1){
+            count++;now.setDate(now.getDate()-1);
+        }else break;
+    }
+    streakEl.textContent=count?`🔥 ${count} ngày viết liên tiếp!`:"";
+}
+
+function toggleDark(){
+    document.body.classList.toggle("dark");
+    localStorage.setItem("dark",document.body.classList.contains("dark"));
+}
+if(localStorage.getItem("dark")==="true") document.body.classList.add("dark");
+
+searchEl.oninput=render;
+render();
+</script>
+
+</body>
+</html>

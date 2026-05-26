@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduHub Dashboard - Professional</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Roboto',sans-serif;background:#F4F7FB;color:#1F2937;transition:.3s}
+.dark body{background:#0F172A;color:#E5E7EB}
+
+/* --- LOADING SCREEN (TÍNH NĂNG MỚI) --- */
+#loader {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #F4F7FB; z-index: 9999;
+    display: flex; justify-content: center; align-items: center;
+    transition: opacity 0.5s ease-out;
+}
+.spinner {
+    width: 50px; height: 50px;
+    border: 5px solid #E5E7EB;
+    border-top: 5px solid #2563EB;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Dark mode cho Loader */
+.dark #loader { background: #0F172A; }
+.dark .spinner { border-color: #334155; border-top-color: #3B82F6; }
+
+
+.dashboard-body{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+    width:250px;
+    background:linear-gradient(180deg,#1E3A8A,#1E40AF);
+    color:#fff;padding:25px;
+    display:flex;flex-direction:column;
+}
+.sidebar-logo{text-align:center;font-size:26px;margin-bottom:30px;font-family:'Montserrat';font-weight:700}
+.sidebar a{
+    display:block;color:#E5E7EB;text-decoration:none;
+    padding:12px;border-radius:8px;margin-bottom:8px;transition:0.2s;
+}
+.sidebar a.active,.sidebar a:hover{background:#2563EB;transform:translateX(5px)}
+
+.logout-btn { margin-top: auto; background: rgba(239, 68, 68, 0.2); color: #FCA5A5 !important; }
+.logout-btn:hover { background: #EF4444 !important; color: #fff !important; }
+
+/* Main */
+.main-content{flex:1;padding:30px;overflow-y:auto;position:relative}
+
+/* Header & Notifications */
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+.header-right{display:flex;align-items:center;gap:15px}
+
+.noti-box { position: relative; cursor: pointer; }
+.bell-icon { font-size: 24px; transition: 0.2s; }
+.bell-icon:hover { transform: scale(1.1); }
+.badge-dot {
+    position: absolute; top: -2px; right: -2px;
+    width: 10px; height: 10px; background: #EF4444;
+    border-radius: 50%; border: 2px solid #fff;
+    display: none;
+}
+.noti-dropdown {
+    position: absolute; top: 35px; right: 0; width: 300px;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 15px; z-index: 100;
+    display: none; border: 1px solid #E5E7EB;
+    animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+.noti-dropdown.show { display: block; }
+.noti-item { 
+    padding: 10px; border-bottom: 1px solid #F3F4F6; font-size: 14px; 
+    display: flex; align-items: flex-start; gap: 10px;
+}
+.noti-icon { color: #F59E0B; }
+
+.toggle{
+    cursor:pointer;background:#2563EB;color:#fff;
+    padding:8px 16px;border-radius:20px;font-weight:500;
+}
+
+/* Cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.card{
+    background:#fff;border-radius:16px;padding:25px;
+    box-shadow:0 8px 20px rgba(0,0,0,.05);transition:0.3s;
+}
+.card:hover{transform:translateY(-5px)}
+.value{font-size:32px;font-weight:700;color:#2563EB}
+
+/* Progress */
+.progress-section{margin-top:30px;background:#fff;padding:25px;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+.progress-item{margin-bottom:20px}
+.progress-header{display:flex;justify-content:space-between;margin-bottom:8px;font-weight:500}
+.bar-wrap{background:#E2E8F0;height:12px;border-radius:10px;overflow:hidden}
+.bar{height:100%;background:linear-gradient(90deg,#3B82F6,#2563EB);width:0;border-radius:10px;transition:.6s}
+
+input[type=range]{width:100%;cursor:pointer}
+
+/* Notes */
+.notes{margin-top:30px;background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+.notes textarea{
+    width:100%;height:80px;border-radius:8px;padding:10px;
+    border:1px solid #CBD5E1;font-family:inherit;resize:none;
+}
+
+.badge{margin-top:20px;font-size:18px;font-weight:600}
+.chart-container{margin-top:30px;background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+
+/* Dark Mode Styles */
+.dark .card,.dark .progress-section,.dark .notes,.dark .chart-container,.dark .noti-dropdown{
+    background:#1E293B;color:#E5E7EB;border:1px solid #334155;
+}
+.dark .value{color:#60A5FA}
+.dark textarea { background: #0F172A; color: white; border-color: #334155; }
+.dark .badge-dot { border-color: #1E293B; }
+</style>
+</head>
+
+<body>
+
+<div id="loader">
+    <div class="spinner"></div>
+</div>
+
+<div class="dashboard-body">
+
+<aside class="sidebar">
+    <div class="sidebar-logo">EduHub.</div>
+    <nav class="sidebar-nav" style="flex:1">
+        <a href="index.html">🏠 Trang chủ</a>
+        <a href="#" class="active">📊 Tổng quan</a>
+        <a href="resources.html">📂 Bài học</a>
+        <a href="../bộ thời khoá biểu/thoikhoabieu.html">📚 Thời khóa biểu</a>
+        <a href="../bộ câu đố tương tác/index.html">💡 Câu đố</a>
+        <a href="../bộ thi/index.html">🚀 Đề thi</a>
+        <a href="../bộ nhật kí/nhatki.html">📕 Nhật kí</a>
+    </nav>
+    <a href="#" id="logoutBtn" class="logout-btn">🚪 Đăng xuất</a>
+</aside>
+
+<main class="main-content">
+
+<div class="header">
+    <div class="user-welcome">
+        <h2>Dashboard học tập</h2>
+        <div class="user-info">Học viên: <strong id="displayName">...</strong></div>
+    </div>
+    
+    <div class="header-right">
+        <div class="noti-box" id="notiBtn">
+            <div class="bell-icon">🔔</div>
+            <div class="badge-dot" id="notiDot"></div>
+            <div class="noti-dropdown" id="notiList"></div>
+        </div>
+        <div class="toggle" id="darkToggle">🌙</div>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="card"><div>Tổng module</div><div class="value" id="courses">0</div></div>
+    <div class="card"><div>Giờ học</div><div class="value">128h</div></div>
+    <div class="card"><div>Hoàn thành</div><div class="value" id="avg">0%</div></div>
+</div>
+
+<div class="progress-section" id="progressList"></div>
+<div class="badge" id="badge"></div>
+
+<div class="notes">
+    <h3>📝 Ghi chú cá nhân</h3>
+    <textarea id="notes" placeholder="Mục tiêu riêng của bạn là gì?"></textarea>
+</div>
+
+<div class="chart-container">
+    <canvas id="chart"></canvas>
+</div>
+
+</main>
+</div>
+
+<script>
+// --- HIỆU ỨNG LOADING ---
+window.addEventListener('load', () => {
+    const loader = document.getElementById('loader');
+    // Giả lập thời gian tải 0.8 giây để tạo hiệu ứng mượt
+    setTimeout(() => {
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            loader.style.display = 'none';
+        }, 500); // Đợi opacity về 0 mới ẩn hẳn
+    }, 800);
+});
+
+// --- KIỂM TRA ĐĂNG NHẬP ---
+if (localStorage.getItem('isLoggedIn') !== 'true') {
+    window.location.href = 'auth.html';
+}
+
+// Xử lý Dark Mode trước để tránh bị chớp màu
+const toggle = document.getElementById("darkToggle");
+if(localStorage.getItem("dark") === "1"){
+    document.documentElement.classList.add("dark");
+}
+
+const currentUser = localStorage.getItem('currentUser') || 'guest';
+document.getElementById('displayName').textContent = currentUser;
+const KEY_PROGRESS = 'progress_' + currentUser;
+const KEY_NOTES = 'notes_' + currentUser;
+
+// --- LOGOUT ---
+document.getElementById('logoutBtn').onclick = (e) => {
+    e.preventDefault();
+    if(confirm('Bạn có chắc muốn đăng xuất?')) {
+        localStorage.removeItem('isLoggedIn');
+        window.location.href = 'index.html';
+    }
+};
+
+// --- LOGIC DASHBOARD ---
+const defaultModules = [
+    {name:"Thời khóa biểu",value:0},
+    {name:"Câu đố",value:0},
+    {name:"Đề thi",value:0},
+    {name:"Nhật kí",value:0},
+];
+
+let modules = JSON.parse(localStorage.getItem(KEY_PROGRESS));
+if(!modules) modules = defaultModules;
+
+const list = document.getElementById("progressList");
+
+modules.forEach((m,i)=>{
+list.innerHTML+=`
+<div class="progress-item">
+<div class="progress-header">
+<b>${m.name}</b><span>${m.value}%</span>
+</div>
+<input type="range" min="0" max="100" value="${m.value}" data-i="${i}">
+<div class="bar-wrap"><div class="bar"></div></div>
+</div>`;
+});
+
+const bars=document.querySelectorAll(".bar");
+const sliders=document.querySelectorAll("input[type=range]");
+const percents=document.querySelectorAll(".progress-header span");
+
+const chart=new Chart(document.getElementById("chart"),{
+    type:"bar",
+    data:{
+        labels:modules.map(m=>m.name),
+        datasets:[{
+            label:"Tiến độ (%)",
+            data:modules.map(m=>m.value),
+            backgroundColor:['#3B82F6','#2563EB','#1D4ED8','#1E40AF'],
+            borderRadius:8
+        }]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{max:100,beginAtZero:true}}}
+});
+
+function checkNotifications(avg) {
+    const notiList = document.getElementById('notiList');
+    const notiDot = document.getElementById('notiDot');
+    let messages = [];
+
+    if (avg < 50) messages.push("⚠️ Cảnh báo: Tiến độ tổng thể dưới 50%.");
+    modules.forEach(m => {
+        if (m.value < 30) messages.push(`📉 <b>${m.name}</b> cần cải thiện (dưới 30%).`);
+    });
+    if (avg === 100) messages.push("🎉 Xuất sắc! Bạn đã hoàn thành tất cả.");
+
+    if (messages.length > 0) {
+        notiDot.style.display = "block";
+        notiList.innerHTML = messages.map(msg => `
+            <div class="noti-item"><span class="noti-icon">●</span> <div>${msg}</div></div>
+        `).join('');
+    } else {
+        notiDot.style.display = "none";
+        notiList.innerHTML = `<div style="text-align:center;color:#9CA3AF;padding:10px">Không có thông báo mới.</div>`;
+    }
+}
+
+document.getElementById('notiBtn').onclick = () => {
+    document.getElementById('notiList').classList.toggle('show');
+};
+
+function update(){
+    let total=0;
+    modules.forEach((m,i)=>{
+        bars[i].style.width=m.value+"%";
+        percents[i].textContent=m.value+"%";
+        total+=m.value;
+    });
+    
+    document.getElementById("courses").textContent=modules.length;
+    const avg=Math.round(total/modules.length);
+    document.getElementById("avg").textContent=avg+"%";
+
+    const badge=document.getElementById("badge");
+    badge.textContent=avg===100?"🏆 Bậc thầy kiến thức": avg>=50?"🟡 Người mới bắt đầu":"";
+
+    localStorage.setItem(KEY_PROGRESS, JSON.stringify(modules));
+    chart.data.datasets[0].data=modules.map(m=>m.value);
+    chart.update();
+    checkNotifications(avg);
+}
+
+sliders.forEach(sl=>{
+    sl.oninput=e=>{
+        modules[e.target.dataset.i].value=+e.target.value;
+        update();
+    }
+});
+
+update();
+
+/* Notes */
+const notesBox = document.getElementById("notes");
+notesBox.value = localStorage.getItem(KEY_NOTES) || "";
+notesBox.oninput = () => localStorage.setItem(KEY_NOTES, notesBox.value);
+
+/* Dark Mode Toggle */
+toggle.onclick=()=>{
+    document.documentElement.classList.toggle("dark");
+    localStorage.setItem("dark",document.documentElement.classList.contains("dark")?"1":"0");
+}
+</script>
+
+</body>
+</html>
+sidebar

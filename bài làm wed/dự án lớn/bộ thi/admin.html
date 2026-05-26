@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Hệ Thống Tư Duy</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 950px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .btn { padding: 12px 20px; cursor: pointer; border: none; border-radius: 6px; color: white; font-weight: bold; margin-right: 10px; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .box { background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid #c8e6c9; }
+        textarea { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #a5d6a7; border-radius: 8px; min-height: 150px; font-family: monospace; font-size: 14px; }
+        select { padding: 10px; border-radius: 6px; border: 1px solid #ccc; min-width: 200px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 0.95rem; }
+        th { background: #2e7d32; color: white; }
+        .guide { font-size: 0.9rem; color: #444; line-height: 1.5; background: rgba(255,255,255,0.7); padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color:#2e7d32;">🧠 QUẢN TRỊ VIÊN (CHẾ ĐỘ TƯ DUY)</h1>
+        
+        <div style="display:flex; justify-content:flex-end;">
+            <button class="btn" style="background:#d32f2f" onclick="clearData()">🗑️ LÀM SẠCH HỆ THỐNG</button>
+        </div>
+
+        <div class="box">
+            <h3 style="margin-top:0">📥 Nạp dữ liệu trực tiếp (Copy - Paste)</h3>
+            <div class="guide">
+                <b>Bước 1:</b> Tại Google Sheets, bôi đen toàn bộ vùng câu hỏi (6 cột: Câu hỏi | A | B | C | D | Số đúng).<br>
+                <b>Bước 2:</b> Nhấn <b>Ctrl + C</b> để Copy.<br>
+                <b>Bước 3:</b> Nhấn <b>Ctrl + V</b> dán vào ô bên dưới và bấm Lưu.
+            </div>
+            <br>
+            <label><b>Chọn môn học:</b></label>
+            <select id="sel-sub">
+                <option>Khoa học tự nhiên</option>
+                <option>Toán</option>
+                <option>Văn</option>
+                <option>Anh</option>
+            </select>
+
+            <textarea id="raw-input" placeholder="Dán dữ liệu bạn vừa Copy từ Google Sheets vào đây..."></textarea>
+            
+            <button class="btn" style="background:#2e7d32; width:100%" onclick="processData()">💾 PHÂN TÍCH VÀ LƯU CÂU HỎI</button>
+        </div>
+
+        <h3>🗂️ Kho dữ liệu hiện tại (<span id="count">0</span> câu):</h3>
+        <table>
+            <thead><tr><th width="15%">Môn</th><th>Nội dung câu hỏi</th><th width="10%">Hành động</th></tr></thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Kiểm tra quyền Admin
+        if(sessionStorage.getItem('admin_login') !== 'true'){
+            let pass = prompt("Nhập mật khẩu quản trị:");
+            if(pass === '123456') sessionStorage.setItem('admin_login','true');
+            else window.location.href='index.html';
+        }
+
+        // Hàm xử lý tư duy: Phân tách dữ liệu theo dấu Tab
+        function processData() {
+            const raw = document.getElementById('raw-input').value;
+            const sub = document.getElementById('sel-sub').value;
+            
+            if(!raw.trim()) return alert("⚠️ Hộp dữ liệu đang trống!");
+
+            // Tách từng dòng
+            const rows = raw.split('\n');
+            let db = JSON.parse(localStorage.getItem('exam_system_db')) || [];
+            let success = 0;
+
+            rows.forEach(row => {
+                // Tách từng cột bằng ký tự TAB (mặc định của Excel/Sheets khi copy)
+                let cols = row.split('\t');
+                
+                // Nếu không có Tab, thử tách bằng dấu gạch đứng | (đề phòng user dùng format cũ)
+                if(cols.length < 6) cols = row.split('|');
+
+                // Logic kiểm tra dữ liệu sạch (Đủ 6 cột và cột đáp án là số)
+                if(cols.length >= 6) {
+                    let cleanCorrect = parseInt(cols[5].trim());
+                    if(!isNaN(cleanCorrect) && cleanCorrect >= 0 && cleanCorrect <= 3) {
+                        db.push({
+                            id: Date.now() + Math.random(),
+                            subject: sub,
+                            text: cols[0].trim(),
+                            options: [cols[1].trim(), cols[2].trim(), cols[3].trim(), cols[4].trim()],
+                            correct: cleanCorrect,
+                            image: ""
+                        });
+                        success++;
+                    }
+                }
+            });
+
+            localStorage.setItem('exam_system_db', JSON.stringify(db));
+            document.getElementById('raw-input').value = ""; // Xóa khung nhập sau khi lưu
+            render();
+            
+            if(success > 0) alert(`✅ Đã nạp thành công ${success} câu hỏi vào kho đề!`);
+            else alert("❌ Không đọc được dữ liệu. Hãy chắc chắn bạn đã Copy đúng 6 cột từ Google Sheets.");
+        }
+
+        // Hàm hiển thị
+        function render() {
+            const db = JSON.parse(localStorage.getItem('exam_system_db')) || [];
+            document.getElementById('count').innerText = db.length;
+            document.getElementById('table-body').innerHTML = db.slice().reverse().slice(0, 50).map((q, i) => `
+                <tr>
+                    <td><b>${q.subject}</b></td>
+                    <td>${q.text}</td>
+                    <td><button onclick="del(${db.length - 1 - i})" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">Xóa</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // Hàm xóa từng câu
+        function del(index) {
+            let db = JSON.parse(localStorage.getItem('exam_system_db'));
+            db.splice(index, 1);
+            localStorage.setItem('exam_system_db', JSON.stringify(db));
+            render();
+        }
+
+        // Hàm xóa tất cả
+        function clearData() {
+            if(confirm("⚠️ CẢNH BÁO: Hành động này sẽ xóa sạch toàn bộ câu hỏi!\nBạn có chắc chắn không?")) {
+                localStorage.removeItem('exam_system_db');
+                render();
+            }
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>

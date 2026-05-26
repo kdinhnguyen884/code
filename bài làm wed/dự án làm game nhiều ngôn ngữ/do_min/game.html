@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper Pro Max</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --cell-bg: #16213e;
+            --cell-hover: #0f3460;
+            --revealed: #e94560;
+        }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; }
+        .controls { margin-bottom: 20px; display: flex; justify-content: center; gap: 15px; align-items: center; }
+        #grid { 
+            display: grid; margin: 0 auto; padding: 10px; background: #0f3460; 
+            border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); width: fit-content;
+        }
+        .cell {
+            width: 32px; height: 32px; background: var(--cell-bg); border: 1px solid #1a1a2e;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer; transition: 0.1s; border-radius: 4px;
+        }
+        .cell:hover { background: var(--cell-hover); transform: scale(1.05); }
+        .cell.revealed { background: #fff; color: #1a1a2e; border: none; }
+        .cell.mine { background: #e94560 !important; animation: shake 0.2s infinite; }
+        .cell.flag { background: #f1c40f !important; }
+        .n1 { color: #3498db; } .n2 { color: #2ecc71; } .n3 { color: #e67e22; } .n4 { color: #9b59b6; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            50% { transform: translate(-1px, -2px) rotate(-1deg); }
+            100% { transform: translate(1px, 1px) rotate(0deg); }
+        }
+        .stats { font-size: 1.2rem; margin-bottom: 10px; color: #4ecca3; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; background: #4ecca3; font-weight: bold; }
+        select { padding: 8px; border-radius: 5px; background: #0f3460; color: #fff; }
+    </style>
+</head>
+<body>
+    <h1>💣 MINESWEEPER PRO</h1>
+    
+    <div class="controls">
+        <select id="difficulty" onchange="startGame()">
+            <option value="9|9|10">Dễ (9x9, 10 mìn)</option>
+            <option value="16|16|40" selected>Vừa (16x16, 40 mìn)</option>
+            <option value="20|30|99">Khó (20x30, 99 mìn)</option>
+        </select>
+        <button onclick="startGame()">Chơi lại</button>
+    </div>
+
+    <div class="stats">
+        <span>⏱️ <span id="timer">0</span>s</span> | 
+        <span>🚩 Còn lại: <span id="mine-count">0</span></span>
+    </div>
+
+    <div id="grid"></div>
+
+<script>
+let ROWS, COLS, MINES, board, timerInterval, seconds, gameOver;
+
+function startGame() {
+    const config = document.getElementById('difficulty').value.split('|');
+    ROWS = parseInt(config[0]);
+    COLS = parseInt(config[1]);
+    MINES = parseInt(config[2]);
+    
+    gameOver = false;
+    seconds = 0;
+    clearInterval(timerInterval);
+    document.getElementById('timer').innerText = 0;
+    document.getElementById('mine-count').innerText = MINES;
+    
+    initBoard();
+    draw();
+}
+
+function initBoard() {
+    board = Array.from({length: ROWS}, () => 
+        Array.from({length: COLS}, () => ({ mine: false, revealed: false, flagged: false, count: 0 }))
+    );
+
+    let placed = 0;
+    while (placed < MINES) {
+        let r = Math.floor(Math.random() * ROWS), c = Math.floor(Math.random() * COLS);
+        if (!board[r][c].mine) { board[r][c].mine = true; placed++; }
+    }
+
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (!board[r][c].mine) {
+                let count = 0;
+                for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++)
+                    if(board[r+i]?.[c+j]?.mine) count++;
+                board[r][c].count = count;
+            }
+        }
+    }
+}
+
+function startTimer() {
+    if (seconds === 0) {
+        timerInterval = setInterval(() => {
+            seconds++;
+            document.getElementById('timer').innerText = seconds;
+        }, 1000);
+    }
+}
+
+function reveal(r, c) {
+    if (gameOver || board[r][c].revealed || board[r][c].flagged) return;
+    startTimer();
+
+    board[r][c].revealed = true;
+    if (board[r][c].mine) {
+        endGame(false);
+        return;
+    }
+
+    if (board[r][c].count === 0) {
+        for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++)
+            if(board[r+i]?.[c+j]) reveal(r+i, c+j);
+    }
+    
+    draw();
+    checkWin();
+}
+
+function toggleFlag(r, c) {
+    if (gameOver || board[r][c].revealed) return;
+    board[r][c].flagged = !board[r][c].flagged;
+    
+    let flags = 0;
+    board.forEach(row => row.forEach(cell => { if(cell.flagged) flags++; }));
+    document.getElementById('mine-count').innerText = MINES - flags;
+    draw();
+}
+
+function checkWin() {
+    const isWin = board.every(row => row.every(cell => cell.mine || cell.revealed));
+    if (isWin) endGame(true);
+}
+
+function endGame(win) {
+    gameOver = true;
+    clearInterval(timerInterval);
+    board.forEach(row => row.forEach(cell => { if(cell.mine) cell.revealed = true; }));
+    draw();
+    setTimeout(() => alert(win ? "Thắng rồi! Bạn quá đỉnh! 🎉" : "BÙM! Game Over! 💀"), 100);
+}
+
+function draw() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${COLS}, 32px)`;
+
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const cell = board[r][c];
+            const div = document.createElement('div');
+            div.className = 'cell';
+            if (cell.revealed) {
+                div.classList.add('revealed');
+                if (cell.mine) { div.classList.add('mine'); div.innerText = '💣'; }
+                else if (cell.count > 0) { div.innerText = cell.count; div.classList.add('n'+cell.count); }
+            } else if (cell.flagged) {
+                div.classList.add('flag'); div.innerText = '🚩';
+            }
+            div.onclick = () => reveal(r, c);
+            div.oncontextmenu = (e) => { e.preventDefault(); toggleFlag(r, c); };
+            grid.appendChild(div);
+        }
+    }
+}
+
+startGame();
+</script>
+</body>
+</html>

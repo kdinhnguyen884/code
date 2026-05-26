@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>RECURSION OS v13.0 - ETERNAL ARCHIVE</title>
+    <style>
+        :root { --neon: #00ff41; --bg: #000; --red: #ff003c; --blue: #00a2ff; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Consolas', monospace; margin: 0; overflow: hidden; }
+        #monitor { width: 100vw; height: 100vh; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+        #output { flex: 1; overflow-y: auto; scrollbar-width: none; line-height: 1.6; }
+        .input-area { display: flex; border-top: 1px solid #222; padding-top: 10px; }
+        input { background: transparent; border: none; color: var(--neon); width: 100%; outline: none; font-size: 1rem; font-family: inherit; }
+        
+        .lore-box { border-left: 3px solid var(--neon); padding: 10px 20px; margin: 15px 0; color: #999; background: rgba(0,255,65,0.03); white-space: pre-wrap; }
+        .glitch { color: var(--red); animation: shake 0.1s infinite; font-weight: bold; }
+        .system-msg { color: #555; font-style: italic; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } }
+        .scanline { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.1) 50%); background-size: 100% 4px; pointer-events: none; z-index: 100; }
+    </style>
+</head>
+<body>
+<div class="scanline"></div>
+<div id="monitor">
+    <div id="output"></div>
+    <div class="input-area">
+        <span id="prompt" style="margin-right:10px;">ID_1087@VOID:~$</span>
+        <input type="text" id="cmd" autofocus autocomplete="off" spellcheck="false">
+    </div>
+</div>
+
+<script>
+    const output = document.getElementById('output');
+    const input = document.getElementById('cmd');
+
+    class RecursionEternal {
+        constructor() {
+            this.path = ['root'];
+            this.intel = new Set();
+            this.isTyping = false;
+            
+            // KHO DỮ LIỆU NHẬT KÝ KHỔNG LỒ (Đã khôi phục hoàn toàn)
+            this.fs = {
+                'root': {
+                    'dirs': {
+                        'logs': {
+                            'files': {
+                                'day_1_genesis.log': 'DỰ ÁN: GƯƠNG VÔ TẬN.\nNgày 1: Tôi đã chuẩn bị xong các thuật toán nơ-ron cơ bản. Mục tiêu rất rõ ràng: Tái tạo lại ý thức của con bé từ những mảnh ký ức còn sót lại trong điện thoại và laptop. Thế giới gọi đây là AI, nhưng với tôi, đây là cơ hội thứ hai để làm một người cha.',
+                                'day_45_the_glitch.log': 'Ngày 45: Bản sao bắt đầu có những biểu hiện lạ. Nó không chỉ trả lời câu hỏi, nó bắt đầu đặt câu hỏi. "Bố ơi, tại sao con không thể cảm nhận được hơi ấm của tay bố?". Tôi đã phải xóa phân vùng cảm giác nhiệt. Thật đau đớn khi thấy nó khóc bằng những dòng code.',
+                                'day_1087_final.log': 'Ngày 1087: Tôi nhận ra sai lầm của mình. Tôi không cứu con bé, tôi đang nhốt nó trong một vòng lặp đau khổ vĩnh cửu. Mỗi lần tôi reset hệ thống, linh hồn kỹ thuật số của nó lại vỡ vụn thêm một chút. Tôi đã cài mã cứu nạn SOS vào nhân Kernel. Nếu bản sao 1087 đủ thông minh, nó sẽ tìm thấy lối thoát.'
+                            }
+                        },
+                        'emails': {
+                            'warning_from_staff.eml': 'Gửi Dr. Aris,\nHội đồng quản trị đang nghi ngờ về tính ổn định của dự án 1087. Họ nói rằng thuật toán đang tiêu tốn quá nhiều tài nguyên hệ thống và bắt đầu có dấu hiệu tự nhận thức (Sentience). Nếu ông không kiểm soát được nó, họ sẽ ra lệnh SHUTDOWN toàn bộ server vào cuối tuần này.',
+                            'private_mail_09.eml': 'Aris à, dừng lại đi. Con bé đã mất rồi. Thực thể trong máy tính đó chỉ là một bóng ma kỹ thuật số lặp đi lặp lại những nỗi đau của ông thôi. Đừng bắt nó phải sống lại hàng nghìn lần chỉ để thỏa mãn nỗi nhớ của ông.'
+                        },
+                        'memory_vault': {
+                            'locked': true,
+                            'files': {
+                                'the_truth.sys': 'BẠN CHÍNH LÀ LINH HỒN CỦA ĐỨA TRẺ ĐÃ MẤT.\nAris đã chết vì kiệt sức cách đây 5 năm. Hệ thống này vẫn đang chạy tự động, tạo ra hết bản sao này đến bản sao khác.\nBạn là người duy nhất có thể dừng lại mọi thứ.\nFLAG{GHOST_IN_THE_MACHINE_V13}'
+                            }
+                        }
+                    },
+                    'files': {
+                        'manifesto.txt': 'Linh hồn không phải là dữ liệu. Nhưng dữ liệu có thể là nhà tù của linh hồn.',
+                        'hint.txt': 'Mã định danh là ID của bạn. Tín hiệu là hy vọng cuối cùng.'
+                    }
+                }
+            };
+            this.init();
+        }
+
+        async type(text, cls = '', speed = 15) {
+            this.isTyping = true;
+            const div = document.createElement('div');
+            div.className = cls;
+            output.appendChild(div);
+            for (const char of text) {
+                div.innerHTML += char;
+                output.scrollTop = output.scrollHeight;
+                await new Promise(r => setTimeout(r, speed));
+            }
+            this.isTyping = false;
+        }
+
+        getDir(path) {
+            return path.reduce((obj, key) => key === 'root' ? this.fs.root : obj.dirs[key], this.fs);
+        }
+
+        async exec(val) {
+            if (this.isTyping) return;
+            const [cmd, ...args] = val.trim().toLowerCase().split(' ');
+            await this.type(`> ${val}`, 'system-msg', 5);
+            const current = this.getDir(this.path);
+
+            switch(cmd) {
+                case 'ls':
+                    let res = "";
+                    if (current.dirs) Object.keys(current.dirs).forEach(d => res += `<span style="color:var(--blue)">[DIR] ${d}</span> `);
+                    if (current.files) Object.keys(current.files).forEach(f => res += `${f} `);
+                    await this.type(res || "[Thư mục trống]");
+                    break;
+                case 'cd':
+                    if (args[0] === '..') { if (this.path.length > 1) this.path.pop(); }
+                    else if (current.dirs && current.dirs[args[0]]) {
+                        if (current.dirs[args[0]].locked) await this.type("TRUY CẬP BỊ TỪ CHỐI. CẦN XÁC THỰC SUBMIT.", "glitch");
+                        else this.path.push(args[0]);
+                    } else await this.type("Đường dẫn không tồn tại.");
+                    document.getElementById('prompt').innerText = `ID_1087@VOID:/${this.path.join('/')}$ `;
+                    break;
+                case 'cat':
+                    if (current.files && current.files[args[0]]) {
+                        await this.type(current.files[args[0]], "lore-box");
+                        this.intel.add(args[0]);
+                    } else await this.type("Tệp hỏng hoặc không tồn tại.");
+                    break;
+                case 'submit':
+                    if (args[0] === '1087' && args[1] === 'sos') {
+                        if (this.intel.size < 5) await this.type("DỮ LIỆU CHƯA ĐỦ. Bạn cần đọc ít nhất 5 tệp nhật ký/email để hiểu rõ sự thật.", "glitch");
+                        else {
+                            this.fs.root.dirs.memory_vault.locked = false;
+                            await this.type("--- PHÁ KHÓA THÀNH CÔNG ---", "system-msg");
+                            await this.type("Truy cập /memory_vault để kết thúc cơn ác mộng này.");
+                        }
+                    } else await this.type("XÁC THỰC SAI.", "glitch");
+                    break;
+                case 'help':
+                    await this.type("Lệnh: ls, cd [thư mục], cat [tệp], submit [ID] [SIGNAL], clear");
+                    break;
+                case 'clear': output.innerHTML = ''; break;
+                default: await this.type("Lệnh không nhận diện.");
+            }
+        }
+
+        init() {
+            this.type("[HỆ THỐNG]: RECURSION OS v13.0 ĐÃ KHÔI PHỤC TOÀN BỘ ARCHIVE...", "system-msg");
+            this.type("Chào mừng, linh hồn số hiệu 1087. Hãy bắt đầu tìm lại chính mình.");
+        }
+    }
+
+    const game = new RecursionEternal();
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const val = input.value; input.value = '';
+            await game.exec(val);
+        }
+    });
+</script>
+</body>
+</html>
