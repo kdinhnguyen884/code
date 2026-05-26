@@ -1,0 +1,15 @@
+# Đảm bảo có dòng này ở trên đầu
+screen.colormode(255)
+
+for i in range(2881):
+    # Tạo màu biến thiên dựa trên i
+    # i chạy từ 0 đến 2880, nên i/11 sẽ loanh quanh 0-255
+    mau_bien_thien = int((i / 2881) * 255) 
+    
+    t.color(mau_bien_thien, 255 - mau_bien_thien, 150) # Màu sẽ đổi từ Xanh sang Đỏ
+    
+    t.forward(a)
+    t.penup()
+    t.backward(a)
+    t.right(0.125)
+    t.pendown()

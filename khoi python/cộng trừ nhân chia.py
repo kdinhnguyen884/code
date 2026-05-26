@@ -1,0 +1,7 @@
+a=int(input("nhập số a "))
+b=int(input("nhập số b "))
+print("Tổng của a và b: ",a+b)
+print("hiệu của a và b: ",a-b)
+print("Tích của a và b: ",a*b)
+print("Chia có dư của a và b:",a%b)
+print("chia không dư của a và b:",a//b)
