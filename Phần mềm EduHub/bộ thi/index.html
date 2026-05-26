@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+        <a href="../bộ home/dashboard.html" style="position: fixed; top: 10px; left: 10px; background: #2563EB; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; z-index: 9999;">
+   &larr; 🏠 Quay lại Home
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+</a>
+    <title>Hệ Thống Thi Trực Tuyến</title>
+    <style>
+        :root { --bg: linear-gradient(135deg, #667eea, #764ba2); --card-bg: white; --text: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; color: var(--text); }
+        .card { background: var(--card-bg); width: 400px; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); text-align: center; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ccc; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .btn-start { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; color: white; cursor: pointer; background: #e94560; transition: 0.3s; margin-top: 15px; }
+        .admin-link { display: none !important; margin-top: 20px; color: #888; text-decoration: none; font-size: 0.8rem; }
+        .leaderboard { margin-top: 25px; text-align: left; border-top: 1px solid #eee; padding-top: 15px; }
+        .lb-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1 id="secret-trigger" style="cursor:pointer">🎓 THI ONLINE</h1>
+        <input type="text" id="username" placeholder="Nhập họ tên thí sinh...">
+        <select id="subject-select">
+            <option value="all">📚 Thi Tổng Hợp</option>
+            <option value="Toán">📐 Môn Toán</option>
+            <option value="Văn">📖 Môn Văn</option>
+            <option value="Anh">🇬🇧 Tiếng Anh</option>
+            <option value="Khoa học tự nhiên">🔬 Khoa học tự nhiên</option>
+        </select>
+        <button class="btn-start" onclick="startExam()">BẮT ĐẦU LÀM BÀI</button>
+        <div class="leaderboard">
+            <div style="font-weight:bold; margin-bottom:5px;">🏆 Top 5 điểm cao nhất:</div>
+            <div id="lb-list"></div>
+        </div>
+        <a href="admin.html" id="admin-link" class="admin-link">🛠️ QUẢN TRỊ</a>
+    </div>
+    <script>
+        let clicks = 0;
+        document.getElementById('secret-trigger').onclick = () => { if(++clicks === 5) document.getElementById('admin-link').style.setProperty('display', 'inline-block', 'important'); };
+        function startExam() {
+            const name = document.getElementById('username').value.trim();
+            if(!name) return alert("Vui lòng nhập tên!");
+            sessionStorage.setItem('current_user_name', name);
+            sessionStorage.setItem('current_exam_subject', document.getElementById('subject-select').value);
+            window.location.href = 'exam.html';
+        }
+        window.onload = () => {
+            const res = JSON.parse(localStorage.getItem('exam_results')) || [];
+            res.sort((a,b) => b.score - a.score);
+            document.getElementById('lb-list').innerHTML = res.slice(0,5).map(r => `<div class="lb-item"><span>${r.name}</span><b>${r.score}đ</b></div>`).join('') || "Chưa có dữ liệu";
+        };
+    </script>
+</body>
+</html>

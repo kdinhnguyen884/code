@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduHub - Trung Tâm Học Tập Của Bạn</title>
+    <link rel="stylesheet" href="style.css"> 
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Thêm hiệu ứng cuộn mượt mà */
+        html { scroll-behavior: smooth; }
+        .feature-item { transition: 0.3s; padding: 20px; border-radius: 12px; }
+        .feature-item:hover { background: #f8fafc; transform: translateY(-5px); }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">EduHub.</a>
+            <ul class="nav-links">
+                <li><a href="#">Trang chủ</a></li>
+                <li><a href="#projects">Lộ trình</a></li>
+                <li><a href="#features">Giới thiệu</a></li>
+                <li><a href="auth.html" class="btn-primary">Đăng nhập</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container hero-content">
+            <h1>Học Thông Minh Hơn,<br>Không Phải Nhiều Hơn</h1>
+            <p>Kết nối kiến thức từ các dự án trước để xây dựng lộ trình phát triển toàn diện cho tương lai của bạn.</p>
+            <div class="hero-buttons">
+                <a href="auth.html" class="btn-primary">Bắt đầu học</a>
+                <a href="#features" class="btn-secondary">Xem giới thiệu</a>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" style="padding: 100px 0; background: #fff; text-align: center;">
+        <div class="container">
+            <h2 style="font-family: Montserrat; margin-bottom: 50px; font-size: 32px;">Tại sao chọn EduHub?</h2>
+            <div style="display: flex; justify-content: space-around; gap: 30px; flex-wrap: wrap;">
+                <div class="feature-item" style="flex: 1; min-width: 250px;">
+                    <div style="font-size: 50px; margin-bottom: 15px;">📊</div>
+                    <h4 style="margin-bottom: 10px; font-size: 20px;">Theo dõi trực quan</h4>
+                    <p style="color: #64748b;">Biểu đồ thông minh giúp bạn biết chính xác mình đang ở đâu trên lộ trình.</p>
+                </div>
+                <div class="feature-item" style="flex: 1; min-width: 250px;">
+                    <div style="font-size: 50px; margin-bottom: 15px;">🔒</div>
+                    <h4 style="margin-bottom: 10px; font-size: 20px;">Cá nhân hóa</h4>
+                    <p style="color: #64748b;">Dữ liệu của bạn là của riêng bạn. Mỗi học viên có không gian lưu trữ độc lập.</p>
+                </div>
+                <div class="feature-item" style="flex: 1; min-width: 250px;">
+                    <div style="font-size: 50px; margin-bottom: 15px;">🌓</div>
+                    <h4 style="margin-bottom: 10px; font-size: 20px;">Giao diện hiện đại</h4>
+                    <p style="color: #64748b;">Hỗ trợ Dark Mode mạnh mẽ giúp bạn tập trung học tập bất kể ngày hay đêm.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects" class="projects-section" style="background: #f1f5f9;">
+        <div class="container">
+            <h2 class="section-title">Hệ Sinh Thái Học Tập</h2>
+            <p class="section-subtitle">Tổng hợp các dự án và công cụ bạn đã xây dựng</p>
+            
+            <div class="grid-projects">
+                <div class="card">
+                    <div class="card-icon">📚</div>
+                    <h3>THỜI KHOÁ BIỂU</h3>
+                    <p>Nơi bạn lên dự án và công việc cho tuần này.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">💡</div>
+                    <h3>CÂU ĐỐ TƯƠNG TÁC</h3>
+                    <p>Các bài tập rèn luyện tư duy logic và giải quyết vấn đề.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🚀</div>
+                    <h3>ĐỀ THI TỔNG HỢP</h3>
+                    <p>Ứng dụng kiến thức vào các bài tập thực tế ảo.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">⭐</div>
+                    <h3>NHẬT KÍ HỌC TẬP</h3>
+                    <p>Nơi bạn ghi chép lại thành quả của 1 ngày học tập.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">⭐</div>
+                    <h3>Phòng Chat</h3>
+                    <p>Trao đổi bài tập và thảo luận cùng bạn bè.</p>
+                </div>
+
+<style>
+    .btn-join {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #128c7e;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+</style>
+            </div>
+        </div>
+    </section>
+
+    <footer style="padding: 40px 0; background: #1e293b; color: white; text-align: center;">
+        <div class="container">
+            <p>&copy; 2024 EduHub Project. Được xây dựng để phát triển bản thân.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

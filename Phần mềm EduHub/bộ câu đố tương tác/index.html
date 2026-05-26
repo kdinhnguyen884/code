@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master - Home & Game</title>
+    <style>
+        :root { --bg: #121212; --card: #1e1e1e; --primary: #2563EB; --text: #ffffff; }
+        
+        /* FIX LỖI CHIA ĐÔI MÀN HÌNH */
+        body { 
+            background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; 
+            margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; user-select: none;
+        }
+
+        /* Nút quay về dự án 4 (Cố định góc trái) */
+        .btn-project-back {
+            position: fixed; top: 10px; left: 10px; background: #2563EB; color: white; 
+            padding: 8px 15px; border-radius: 5px; text-decoration: none; z-index: 10000;
+            font-weight: bold; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .app-container { width: 90%; max-width: 500px; position: relative; }
+
+        /* MÀN HÌNH HOME */
+        .home-view {
+            text-align: center; background: var(--card); padding: 40px; border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333;
+        }
+        .title { font-size: 2.2rem; cursor: pointer; margin-bottom: 30px; transition: 0.3s; }
+        .btn-start {
+            background: var(--primary); color: white; border: none; padding: 15px 40px;
+            font-size: 1.2rem; border-radius: 30px; font-weight: bold; cursor: pointer; width: 100%;
+        }
+
+        /* MÀN HÌNH GAME */
+        .game-view {
+            display: none; background: var(--card); padding: 30px; border-radius: 16px;
+            border: 1px solid #333;
+        }
+        .timer-container { width: 100%; height: 6px; background: #333; border-radius: 3px; margin: 20px 0; overflow: hidden; }
+        .timer-bar { height: 100%; width: 100%; background: #00e676; transition: width 1s linear; }
+        .question { font-size: 1.3rem; margin-bottom: 25px; font-weight: bold; min-height: 60px; }
+        .btn-grid { display: flex; flex-direction: column; gap: 12px; }
+        .btn-opt { padding: 16px; background: #2c2c2c; color: #fff; border: 2px solid transparent; border-radius: 10px; cursor: pointer; text-align: left; }
+        .btn-opt.correct { background: rgba(0, 230, 118, 0.2); border-color: #00e676; color: #00e676; }
+        .btn-opt.wrong { background: rgba(255, 82, 82, 0.2); border-color: #ff5252; color: #ff5252; }
+        .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; color: #888; }
+        .btn-next { padding: 10px 25px; background: var(--primary); color: white; border: none; border-radius: 20px; cursor: pointer; display: none; }
+    </style>
+</head>
+<body>
+
+    <a href="../bộ home/dashboard.html" class="btn-project-back">&larr; Quay lại Home</a>
+
+    <div class="app-container">
+        <div id="home-screen" class="home-view">
+            <h1 id="secret-title" class="title">QUIZ MASTER</h1>
+            <button class="btn-start" onclick="goToGame()">▶ BẮT ĐẦU CHƠI</button>
+        </div>
+
+        <div id="game-screen" class="game-view">
+            <div style="display: flex; justify-content: space-between;">
+                <button onclick="goHome()" style="background:none; border:1px solid #444; color:#888; cursor:pointer;">⬅ Thoát</button>
+                <span id="score">Điểm: 0</span>
+            </div>
+            <div class="timer-container"><div id="timer" class="timer-bar"></div></div>
+            <div id="q-text" class="question"></div>
+            <div id="answers" class="btn-grid"></div>
+            <div class="footer">
+                <span id="progress"></span>
+                <button id="btn-next" class="btn-next">Tiếp theo ➡</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SECRET_PASS = "admin123";
+        let db = JSON.parse(localStorage.getItem('quizData')) || [];
+        let questions = [], currentIdx = 0, score = 0, timerInterval, timeLeft = 15;
+
+        // Mật đạo
+        let clickCount = 0;
+        document.getElementById('secret-title').onclick = () => {
+            clickCount++;
+            if (clickCount === 5) {
+                if (prompt("Nhập mã Admin:") === SECRET_PASS) {
+                    sessionStorage.setItem('isAdmin', 'true');
+                    window.location.href = 'admin.html';
+                }
+                clickCount = 0;
+            }
+        };
+
+        function goToGame() {
+            if (db.length === 0) return alert("Kho đề trống!");
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            startQuiz();
+        }
+
+        function goHome() {
+            clearInterval(timerInterval);
+            document.getElementById('home-screen').style.display = 'block';
+            document.getElementById('game-screen').style.display = 'none';
+        }
+
+        function startQuiz() {
+            questions = db.sort(() => 0.5 - Math.random()).slice(0, 20);
+            currentIdx = 0; score = 0;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            clearInterval(timerInterval);
+            timeLeft = 15; startTimer();
+            let item = questions[currentIdx];
+            document.getElementById('q-text').innerText = item.q;
+            document.getElementById('progress').innerText = `${currentIdx + 1}/${questions.length}`;
+            document.getElementById('answers').innerHTML = '';
+            document.getElementById('btn-next').style.display = 'none';
+
+            item.options.forEach((opt, i) => {
+                let btn = document.createElement('button');
+                btn.className = 'btn-opt'; btn.innerText = opt;
+                btn.onclick = () => {
+                    clearInterval(timerInterval);
+                    Array.from(document.querySelectorAll('.btn-opt')).forEach(b => b.disabled = true);
+                    if (i === item.correct) { btn.classList.add('correct'); score++; }
+                    else { 
+                        btn.classList.add('wrong'); 
+                        document.querySelectorAll('.btn-opt')[item.correct].classList.add('correct');
+                    }
+                    document.getElementById('score').innerText = `Điểm: ${score}`;
+                    document.getElementById('btn-next').style.display = 'block';
+                };
+                document.getElementById('answers').appendChild(btn);
+            });
+        }
+
+        function startTimer() {
+            const bar = document.getElementById('timer');
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                bar.style.width = (timeLeft / 15) * 100 + "%";
+                if (timeLeft <= 0) { clearInterval(timerInterval); showQuestion(); }
+            }, 1000);
+        }
+
+        document.getElementById('btn-next').onclick = () => {
+            currentIdx++;
+            if (currentIdx < questions.length) showQuestion();
+            else { alert("Kết thúc! Điểm của bạn: " + score); goHome(); }
+        };
+    </script>
+</body>
+</html>

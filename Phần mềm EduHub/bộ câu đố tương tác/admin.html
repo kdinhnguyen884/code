@@ -1,0 +1,251 @@
+ư<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Quản Lý Kho Đề</title>
+    <style>
+        /* --- GIAO DIỆN DARK MODE --- */
+        :root { --bg: #1a1a2e; --panel: #16213e; --primary: #e94560; --text: #fff; --success: #2ecc71; --warning: #f1c40f; --purple: #9b59b6; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: var(--panel); padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        h1 { color: var(--primary); text-align: center; margin-bottom: 30px; }
+
+        /* Toolbar Buttons */
+        .toolbar { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 20px; gap: 10px; flex-wrap: wrap; }
+        .btn-tool { background: #333; color: white; font-size: 0.9rem; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-tool:hover { background: #444; }
+        
+        .btn-bulk { background: var(--purple); } 
+        .btn-danger { background: var(--danger); } /* Màu đỏ cho nút xóa hết */
+
+        /* Form Input */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .span-2 { grid-column: span 2; }
+        
+        label { display: block; margin-bottom: 5px; color: #ccc; font-size: 0.9em; font-weight: 600; }
+        input, select { width: 100%; padding: 12px; background: #0f3460; border: 1px solid #333; color: white; border-radius: 6px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); }
+
+        /* Action Buttons */
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; color: #fff; font-weight: bold; transition: 0.2s; font-size: 1rem; }
+        .btn:hover { opacity: 0.9; }
+        .btn-add { background: var(--success); width: 100%; }
+        .btn-update { background: var(--warning); width: 100%; color: #000; display: none; }
+        .btn-cancel { background: #555; width: 100%; margin-top: 10px; display: none; } 
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1a1a2e; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
+        th { background: #0f3460; color: white; }
+        tr:hover { background: #252a41; }
+
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; margin-right: 5px; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-edit { background: var(--warning); color: black; }
+        .btn-del { background: var(--danger); color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="toolbar">
+            <a href="index.html" class="btn-tool" style="text-decoration: none;">⬅️ Về Game</a>
+            <div>
+                <button class="btn-tool btn-bulk" onclick="bulkAdd()">⚡ Nạp nhanh</button>
+                <button class="btn-tool" onclick="exportJSON()">⬇️ Xuất File</button>
+                <button class="btn-tool" onclick="document.getElementById('file-input').click()">⬆️ Nạp File</button>
+                <button class="btn-tool btn-danger" onclick="deleteAll()">🗑️ Xóa hết</button>
+                <input type="file" id="file-input" style="display: none;" onchange="importJSON(this)">
+            </div>
+        </div>
+
+        <h1>⚙️ QUẢN LÝ KHO ĐỀ</h1>
+
+        <div class="form-grid">
+            <div class="span-2">
+                <label>Nội dung câu hỏi:</label>
+                <input type="text" id="inp-q" placeholder="Ví dụ: Con gà có mấy chân?">
+            </div>
+            <div><label>Đáp án A:</label><input type="text" id="inp-a"></div>
+            <div><label>Đáp án B:</label><input type="text" id="inp-b"></div>
+            <div><label>Đáp án C:</label><input type="text" id="inp-c"></div>
+            <div><label>Đáp án D:</label><input type="text" id="inp-d"></div>
+            <div class="span-2">
+                <label>Đáp án đúng:</label>
+                <select id="inp-correct">
+                    <option value="0">Đáp án A</option>
+                    <option value="1">Đáp án B</option>
+                    <option value="2">Đáp án C</option>
+                    <option value="3">Đáp án D</option>
+                </select>
+            </div>
+        </div>
+
+        <button id="btn-add" class="btn btn-add" onclick="addQuestion()">➕ THÊM CÂU HỎI MỚI</button>
+        <button id="btn-update" class="btn btn-update" onclick="updateQuestion()">💾 CẬP NHẬT SỬA ĐỔI</button>
+        <button id="btn-cancel" class="btn btn-cancel" onclick="cancelEdit()">Hủy bỏ</button>
+
+        <h3 style="margin-top: 30px; color: #ccc;">Danh sách câu hỏi (<span id="count">0</span>)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">#</th>
+                    <th>Câu hỏi</th>
+                    <th width="20%">Đáp án đúng</th>
+                    <th width="15%">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // --- 1. BẢO MẬT ---
+        if (sessionStorage.getItem('isAdmin') !== 'true') {
+            alert("⛔ Truy cập bị từ chối!");
+            window.location.href = "index.html";
+        }
+
+        // --- 2. LOGIC CHÍNH ---
+        let db = JSON.parse(localStorage.getItem('quizData')) || [];
+        let editIndex = -1;
+
+        // --- 3. XÓA TẤT CẢ (MỚI) ---
+        function deleteAll() {
+            if (confirm("⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ câu hỏi không?\nHành động này không thể hoàn tác!")) {
+                db = [];
+                saveData();
+                alert("Đã xóa sạch dữ liệu!");
+            }
+        }
+
+        // --- 4. CÁC HÀM KHÁC (GIỮ NGUYÊN) ---
+        function bulkAdd() {
+            const guide = `Dán danh sách câu hỏi:\nCâu hỏi | A | B | C | D | Đáp án đúng (0-3)\n\nVí dụ:\n1+1=? | 1 | 2 | 3 | 4 | 1`;
+            const rawData = prompt(guide);
+            if (!rawData) return;
+
+            const lines = rawData.split('\n');
+            let addedCount = 0;
+            lines.forEach(line => {
+                const parts = line.split('|').map(p => p.trim());
+                if (parts.length === 6) {
+                    db.push({ q: parts[0], options: [parts[1], parts[2], parts[3], parts[4]], correct: parseInt(parts[5]) });
+                    addedCount++;
+                }
+            });
+            if (addedCount > 0) { saveData(); alert(`✅ Đã nạp ${addedCount} câu!`); }
+        }
+
+        function render() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            document.getElementById('count').innerText = db.length;
+            db.forEach((item, i) => {
+                tbody.innerHTML += `<tr>
+                    <td>${i + 1}</td>
+                    <td>${item.q}</td>
+                    <td style="color: lightgreen; font-weight: bold;">${item.options[item.correct]}</td>
+                    <td>
+                        <button class="btn-sm btn-edit" onclick="startEdit(${i})">Sửa</button>
+                        <button class="btn-sm btn-del" onclick="deleteQuestion(${i})">Xóa</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function saveData() { localStorage.setItem('quizData', JSON.stringify(db)); render(); }
+
+        function addQuestion() {
+            const q = document.getElementById('inp-q').value;
+            const opts = [
+                document.getElementById('inp-a').value, document.getElementById('inp-b').value,
+                document.getElementById('inp-c').value, document.getElementById('inp-d').value
+            ];
+            const correct = parseInt(document.getElementById('inp-correct').value);
+            if (!q || opts.some(o => !o)) return alert("Thiếu thông tin!");
+            db.push({ q, options: opts, correct });
+            saveData(); clearForm();
+        }
+
+        function startEdit(index) {
+            editIndex = index;
+            const item = db[index];
+            document.getElementById('inp-q').value = item.q;
+            document.getElementById('inp-a').value = item.options[0];
+            document.getElementById('inp-b').value = item.options[1];
+            document.getElementById('inp-c').value = item.options[2];
+            document.getElementById('inp-d').value = item.options[3];
+            document.getElementById('inp-correct').value = item.correct;
+            document.getElementById('btn-add').style.display = 'none';
+            document.getElementById('btn-update').style.display = 'block';
+            document.getElementById('btn-cancel').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        function updateQuestion() {
+            if (editIndex === -1) return;
+            db[editIndex].q = document.getElementById('inp-q').value;
+            db[editIndex].options = [
+                document.getElementById('inp-a').value, document.getElementById('inp-b').value,
+                document.getElementById('inp-c').value, document.getElementById('inp-d').value
+            ];
+            db[editIndex].correct = parseInt(document.getElementById('inp-correct').value);
+            saveData(); cancelEdit(); alert("Đã cập nhật!");
+        }
+
+        function cancelEdit() {
+            clearForm();
+            document.getElementById('btn-add').style.display = 'block';
+            document.getElementById('btn-update').style.display = 'none';
+            document.getElementById('btn-cancel').style.display = 'none';
+            editIndex = -1;
+        }
+
+        function deleteQuestion(index) { if(confirm("Xóa câu này?")) { db.splice(index, 1); saveData(); } }
+        function clearForm() { document.querySelectorAll('input').forEach(i => i.value = ''); document.getElementById('inp-correct').value = 0; }
+
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const a = document.createElement('a'); a.href = dataStr; a.download = "kho_de_quiz.json"; a.click();
+        }
+
+        function importJSON(input) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    if(confirm("OK = Gộp thêm, Cancel = Ghi đè toàn bộ?")) { db = db.concat(loadedData); } else { db = loadedData; }
+                    saveData(); alert("Đã nạp!");
+                } catch(err) { alert("File lỗi!"); }
+            };
+            reader.readAsText(input.files[0]);
+        }
+        function render() {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+    document.getElementById('count').innerText = db.length;
+
+    // --- ĐOẠN THAY ĐỔI Ở ĐÂY ---
+    // .slice(-20) lấy 20 phần tử cuối, .reverse() đưa câu mới lên đầu
+    const displayData = db.slice(-20).reverse(); 
+
+    displayData.forEach((item) => {
+        // Tìm lại index thực sự trong mảng db gốc để Sửa/Xóa cho đúng câu
+        const realIndex = db.indexOf(item); 
+        
+        tbody.innerHTML += `<tr>
+            <td>${realIndex + 1}</td>
+            <td>${item.q}</td>
+            <td style="color: lightgreen; font-weight: bold;">${item.options[item.correct]}</td>
+            <td>
+                <button class="btn-sm btn-edit" onclick="startEdit(${realIndex})">Sửa</button>
+                <button class="btn-sm btn-del" onclick="deleteQuestion(${realIndex})">Xóa</button>
+            </td>
+        </tr>`;
+    });
+}
+    </script>
+</body>
+</html>

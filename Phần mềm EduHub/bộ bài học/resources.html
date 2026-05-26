@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduHub – Gợi Ý Bài Học Thông Minh</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Roboto',sans-serif;background:#f4f7fb;color:#333}
+.container{max-width:1100px;margin:auto;padding:40px 20px}
+header{text-align:center;margin-bottom:35px}
+h1{font-family:'Montserrat';color:#1e3a8a;margin-bottom:10px}
+.input-box{max-width:650px;margin:0 auto 25px}
+.input-box input{width:100%;padding:15px;font-size:16px;border-radius:12px;border:1px solid #ddd}
+.tip{text-align:center;color:#64748b;margin-bottom:30px}
+.resource-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.res-card{background:#fff;padding:20px;border-radius:15px;border-left:5px solid #2563eb;box-shadow:0 4px 15px rgba(0,0,0,.06);transition:.3s}
+.res-card:hover{transform:translateY(-5px);box-shadow:0 8px 25px rgba(0,0,0,.1)}
+.res-type{font-size:12px;font-weight:bold;color:#2563eb;text-transform:uppercase}
+.res-title{font-size:18px;margin:10px 0;color:#1e293b}
+.res-desc{font-size:14px;color:#64748b;margin-bottom:15px;line-height:1.5}
+.btn-view{display:inline-block;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px}
+</style>
+</head>
+
+<body>
+<div class="container">
+          <a href="../bộ home/dashboard.html" style="position: fixed; top: 10px; left: 10px; background: #2563EB; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; z-index: 9999;">
+   &larr; 🏠 Quay lại Home </a>
+
+<header>
+    <h1>Gợi Ý Bài Học Thông Minh</h1>
+    <p>Không nhập → video gợi ý | Nhập câu hỏi → video liên quan</p>
+</header>
+
+<div class="input-box">
+    <input
+        type="text"
+        id="questionInput"
+        placeholder="Ví dụ: Số nguyên tố là gì?"
+        oninput="suggestVideo()"
+    >
+</div>
+
+<p class="tip">
+💡 Gợi ý: số nguyên tố, căn bậc hai, điện áp, công thức hóa học, thì hiện tại, mệnh đề quan hệ
+</p>
+
+<div class="resource-grid" id="resultGrid"></div>
+
+</div>
+
+<script>
+/* ================= VIDEO MẶC ĐỊNH (HỌC CHUNG) ================= */
+
+const defaultVideos = [
+ {title:"Số nguyên tố cơ bản",desc:"Cách nhận biết số nguyên tố.",link:"https://www.youtube.com/watch?v=klcIklsWzrY"},
+ {title:"Cách học hiệu quả cho học sinh",desc:"Phương pháp học thông minh, nhớ lâu.",link:"https://www.youtube.com/watch?v=ebWwltnVzFU"},
+ {title:"Học nhanh – nhớ lâu",desc:"Kỹ thuật học tập khoa học.",link:"https://www.youtube.com/watch?v=QoW2wR_P4WU"},
+ {title:"Rèn tư duy học tập",desc:"Xây dựng tư duy tự học.",link:"https://www.youtube.com/watch?v=0O3Qqz9aN2g"},
+ {title:"Cách ghi nhớ kiến thức lâu dài",desc:"Áp dụng khoa học não bộ.",link:"https://www.youtube.com/watch?v=IlU-zDU6aQ0"},
+ {title:"Quản lý thời gian học tập",desc:"Học tập hiệu quả mỗi ngày.",link:"https://www.youtube.com/watch?v=Z6hsP7co3ZA"},
+ {title:"Số tự nhiên là gì?",desc:"Khái niệm số tự nhiên.",link:"https://www.youtube.com/watch?v=3y9Hf0FJXnY"},
+ {title:"Căn bậc hai dễ hiểu",desc:"Giải thích √144 = 12.",link:"https://www.youtube.com/watch?v=0O3Qqz9aN2g"},
+ {title:"Phân số cơ bản",desc:"Cộng – trừ – nhân – chia phân số.",link:"https://www.youtube.com/watch?v=wv3FZzN1Z6U"},
+ {title:"Giải phương trình bậc nhất",desc:"Giải nhanh phương trình.",link:"https://www.youtube.com/watch?v=9zq0VJ7v1iw"},
+{title:"Hiệu điện thế là gì?",desc:"Đơn vị Vôn (V).",link:"https://www.youtube.com/watch?v=8rZ2GJpR4nY"},
+{title:"Cường độ dòng điện",desc:"Khái niệm và đơn vị Ampe.",link:"https://www.youtube.com/watch?v=JzZz9yZkP5M"},
+{title:"Định luật Ôm",desc:"V = I × R dễ hiểu.",link:"https://www.youtube.com/watch?v=G1w1xwqQkJk"},
+{title:"Ba định luật Newton",desc:"Nền tảng cơ học.",link:"https://www.youtube.com/watch?v=Z9pY1k3pU7A"},
+{title:"Công thức hóa học cơ bản",desc:"H₂O, CO₂, NaCl.",link:"https://www.youtube.com/watch?v=V7F0p8mH0kE"},
+{title:"Cấu tạo nguyên tử",desc:"Electron – Proton – Neutron.",link:"https://www.youtube.com/watch?v=8yis7GzlXNM"},
+{title:"Phản ứng hóa học là gì?",desc:"Dấu hiệu nhận biết phản ứng.",link:"https://www.youtube.com/watch?v=4L6F9bJ7hL4"},
+{title:"Bảng tuần hoàn hóa học",desc:"Cách nhớ bảng tuần hoàn.",link:"https://www.youtube.com/watch?v=0RRVV4Diomg"},
+{title:"Present Simple Tense",desc:"Thì hiện tại đơn dễ hiểu.",link:"https://www.youtube.com/watch?v=K0nJ0Bf2U9M"},
+{title:"Present Continuous",desc:"Cách dùng thì HTTD.",link:"https://www.youtube.com/watch?v=H6x5W4n6j7o"},
+{title:"Relative Clauses",desc:"Who – Which – That.",link:"https://www.youtube.com/watch?v=R5H0zqM8K9I"},
+{title:"Học từ vựng hiệu quả",desc:"Cách nhớ từ lâu.",link:"https://www.youtube.com/watch?v=1d2z3A7xXrE"},
+{title: "Bí quyết học Toán hiệu quả",desc: "Cách học Toán dễ hiểu, không áp lực.",link: "https://www.youtube.com/watch?v=YYYY"},
+{title: "Định lý Pitago",desc: "a² + b² = c² dễ nhớ.",link: "https://www.youtube.com/watch?v=_Z5XDBxQPA4"},
+{title:"Hàm số bậc nhất",desc:"y = ax + b cơ bản.",link:"https://www.youtube.com/watch?v=aRAVAEMuxu0"},
+{title:"Irregular Verbs",desc:"Cách nhớ động từ bất quy tắc.",link:"https://www.youtube.com/watch?v=AsNIu-1ZDTU"},
+{title:"Áp suất là gì?",desc:"Công thức p = F / S.",link:"https://www.youtube.com/watch?v=PpCz1S7Z3DE"},
+];
+
+/* ================= VIDEO THEO CHỦ ĐỀ ================= */
+
+const topicVideos = [
+
+/* ===== TOÁN ===== */
+{keywords:["hàm số"],title:"Hàm số bậc nhất",desc:"y = ax + b cơ bản.",link:"https://www.youtube.com/watch?v=aRAVAEMuxu0"},
+{keywords:["số nguyên tố"],title:"Số nguyên tố cơ bản",desc:"Cách nhận biết số nguyên tố.",link:"https://www.youtube.com/watch?v=klcIklsWzrY"},
+{keywords:["số tự nhiên"],title:"Số tự nhiên là gì?",desc:"Khái niệm số tự nhiên.",link:"https://www.youtube.com/watch?v=3y9Hf0FJXnY"},
+{keywords:["căn bậc hai","căn"],title:"Căn bậc hai dễ hiểu",desc:"Giải thích √144 = 12.",link:"https://www.youtube.com/watch?v=0O3Qqz9aN2g"},
+{keywords:["phân số"],title:"Phân số cơ bản",desc:"Cộng – trừ – nhân – chia phân số.",link:"https://www.youtube.com/watch?v=wv3FZzN1Z6U"},
+{keywords:["phương trình"],title:"Giải phương trình bậc nhất",desc:"Giải nhanh phương trình.",link:"https://www.youtube.com/watch?v=9zq0VJ7v1iw"},
+{keywords: ["tam giác", "hình học"],title: "Tam giác và các loại tam giác",desc: "Phân biệt tam giác đều, cân, vuông.",link: "https://www.youtube.com/watch?v=cb4ED-ni5P0"},
+{keywords:["số tự nhiên"],title:"Số tự nhiên là gì?",desc:"Khái niệm số tự nhiên và ví dụ.",link:"https://www.youtube.com/watch?v=3y9Hf0FJXnY"},
+{keywords:["số nguyên tố"],title:"Số nguyên tố cơ bản",desc:"Cách nhận biết số nguyên tố nhanh.",link:"https://www.youtube.com/watch?v=klcIklsWzrY"},
+{keywords:["phân số"],title:"Phân số – kiến thức nền tảng",desc:"Cộng, trừ, nhân, chia phân số.",link:"https://www.youtube.com/watch?v=wv3FZzN1Z6U"},
+{keywords:["ước","bội"],title:"Ước và bội của một số",desc:"Cách tìm ước và bội dễ hiểu.",link:"https://www.youtube.com/watch?v=1kKZJ9zQz2U"},
+
+{keywords:["biểu thức đại số"],title:"Biểu thức đại số cơ bản",desc:"Giá trị của biểu thức đại số.",link:"https://www.youtube.com/watch?v=8x9pF5J3sQY"},
+{keywords:["phương trình bậc nhất"],title:"Giải phương trình bậc nhất",desc:"ax + b = 0 nhanh và chính xác.",link:"https://www.youtube.com/watch?v=9zq0VJ7v1iw"},
+{keywords:["hệ phương trình"],title:"Hệ phương trình bậc nhất",desc:"Phương pháp thế và cộng.",link:"https://www.youtube.com/watch?v=4B4P9xZQGgM"},
+{keywords:["hàm số","hàm số bậc nhất"],title:"Hàm số bậc nhất",desc:"y = ax + b cơ bản.",link:"https://www.youtube.com/watch?v=i9s6yumw7kQ"},
+{keywords:["căn bậc hai","căn"],title:"Căn bậc hai cơ bản",desc:"Tính căn bậc hai nhanh.",link:"https://www.youtube.com/watch?v=0O3Qqz9aN2g"},
+{keywords:["lũy thừa"],title:"Lũy thừa và quy tắc",desc:"Nhân – chia lũy thừa cùng cơ số.",link:"https://www.youtube.com/watch?v=QpW1mPZcJ2Q"},
+
+{keywords:["tam giác"],title:"Các loại tam giác",desc:"Tam giác đều, cân, vuông.",link:"https://www.youtube.com/watch?v=cb4ED-ni5P0"},
+{keywords:["định lý pitago","pytago"],title:"Định lý Pitago",desc:"a² + b² = c² dễ nhớ.",link:"https://www.youtube.com/watch?v=_Z5XDBxQPA4"},
+{keywords:["hình chữ nhật"],title:"Hình chữ nhật – diện tích & chu vi",desc:"Công thức hình chữ nhật.",link:"https://www.youtube.com/watch?v=vNW7A-QmRqg"},
+{keywords:["hình tròn"],title:"Hình tròn – chu vi & diện tích",desc:"C = 2πR, S = πR².",link:"https://www.youtube.com/watch?v=oLh7r7y_aTk"},
+
+{keywords:["trung bình cộng"],title:"Số trung bình cộng",desc:"Cách tính trung bình cộng.",link:"https://www.youtube.com/watch?v=C_9HsoUu-A0"},
+{keywords:["xác suất"],title:"Xác suất cơ bản",desc:"Xác suất của biến cố.",link:"https://www.youtube.com/watch?v=CCCC6"},
+
+/* ===== VẬT LÝ ===== */
+{keywords: ["định lý pitago", "pytago", "tam giác vuông"],title: "Định lý Pitago",desc: "a² + b² = c² dễ nhớ.",link: "https://www.youtube.com/watch?v=ZZZZ"},
+{keywords:["hiệu điện thế","điện áp","vôn"],title:"Hiệu điện thế là gì?",desc:"Đơn vị Vôn (V).",link:"https://www.youtube.com/watch?v=8rZ2GJpR4nY"},
+{keywords:["cường độ dòng điện"],title:"Cường độ dòng điện",desc:"Khái niệm và đơn vị Ampe.",link:"https://www.youtube.com/watch?v=JzZz9yZkP5M"},
+{keywords:["định luật ôm"],title:"Định luật Ôm",desc:"V = I × R dễ hiểu.",link:"https://www.youtube.com/watch?v=G1w1xwqQkJk"},
+{keywords:["lực","newton"],title:"Ba định luật Newton",desc:"Nền tảng cơ học.",link:"https://www.youtube.com/watch?v=Z9pY1k3pU7A"},
+{keywords:["áp suất"],title:"Áp suất là gì?",desc:"Công thức p = F / S.",link:"https://www.youtube.com/watch?v=PpCz1S7Z3DE"},
+{keywords:["chuyển động"],title:"Chuyển động cơ học",desc:"Khái niệm chuyển động và đứng yên.",link:"https://www.youtube.com/watch?v=Z9pY1k3pU7A"},
+{keywords:["vận tốc"],title:"Vận tốc là gì?",desc:"Công thức v = s / t.",link:"https://www.youtube.com/watch?v=9p7HkX5jG4M"},
+{keywords:["chuyển động đều"],title:"Chuyển động đều",desc:"Đặc điểm chuyển động đều.",link:"https://www.youtube.com/watch?v=Hj3J8nZ7s6E"},
+{keywords:["gia tốc"],title:"Gia tốc là gì?",desc:"Gia tốc trong chuyển động.",link:"https://www.youtube.com/watch?v=Yz6QpYb3W7Q"},
+
+{keywords:["lực"],title:"Lực là gì?",desc:"Khái niệm lực và tác dụng của lực.",link:"https://www.youtube.com/watch?v=Z9pY1k3pU7A"},
+{keywords:["trọng lực"],title:"Trọng lực và khối lượng",desc:"Trọng lực tác dụng lên vật.",link:"https://www.youtube.com/watch?v=R9FJjQ9H6eM"},
+{keywords:["ma sát"],title:"Lực ma sát",desc:"Ma sát nghỉ và ma sát trượt.",link:"https://www.youtube.com/watch?v=JYkXW8hZ9bQ"},
+
+{keywords:["công cơ học"],title:"Công cơ học",desc:"Công thức A = F × s.",link:"https://www.youtube.com/watch?v=6yL3zP2H8nM"},
+{keywords:["công suất"],title:"Công suất",desc:"Công suất và đơn vị oát.",link:"https://www.youtube.com/watch?v=VJ7YxZz2zE8"},
+{keywords:["cơ năng"],title:"Cơ năng",desc:"Động năng và thế năng.",link:"https://www.youtube.com/watch?v=YcZkQp2v0JQ"},
+{keywords:["động năng"],title:"Động năng",desc:"Động năng của vật chuyển động.",link:"https://www.youtube.com/watch?v=Zc6Pp9N7J0M"},
+{keywords:["thế năng"],title:"Thế năng",desc:"Thế năng trọng trường.",link:"https://www.youtube.com/watch?v=Zb8X7p5V4kM"},
+
+{keywords:["áp suất"],title:"Áp suất là gì?",desc:"Công thức p = F / S.",link:"https://www.youtube.com/watch?v=PpCz1S7Z3DE"},
+{keywords:["áp suất chất lỏng"],title:"Áp suất chất lỏng",desc:"Áp suất trong chất lỏng.",link:"https://www.youtube.com/watch?v=8Z2KZgH7d9E"},
+{keywords:["lực đẩy ác si mét"],title:"Lực đẩy Ác-si-mét",desc:"Vật nổi – vật chìm.",link:"https://www.youtube.com/watch?v=K3GzZP8X6Hc"},
+
+{keywords:["nhiệt năng"],title:"Nhiệt năng là gì?",desc:"Nhiệt năng và nhiệt độ.",link:"https://www.youtube.com/watch?v=H9B7zN8ZxXU"},
+{keywords:["dẫn nhiệt"],title:"Sự dẫn nhiệt",desc:"Dẫn nhiệt trong chất rắn.",link:"https://www.youtube.com/watch?v=K2Y9X7J8ZyM"},
+{keywords:["đối lưu"],title:"Sự đối lưu",desc:"Đối lưu trong chất lỏng và khí.",link:"https://www.youtube.com/watch?v=6RZB8X7M9Zk"},
+{keywords:["bức xạ nhiệt"],title:"Bức xạ nhiệt",desc:"Truyền nhiệt bằng bức xạ.",link:"https://www.youtube.com/watch?v=ZxK9J7M8P2E"},
+
+{keywords:["nam châm"],title:"Nam châm và từ trường",desc:"Tính chất của nam châm.",link:"https://www.youtube.com/watch?v=Zx2X7P9Y8KM"},
+{keywords:["từ trường"],title:"Từ trường là gì?",desc:"Đường sức từ.",link:"https://www.youtube.com/watch?v=9ZJX7M8P2Yk"},
+{keywords:["hiệu điện thế","điện áp","vôn"],title:"Hiệu điện thế",desc:"Đơn vị vôn (V).",link:"https://www.youtube.com/watch?v=b3zdQQGTQiE"},
+{keywords:["điện trở"],title:"Điện trở",desc:"Khái niệm điện trở.",link:"https://www.youtube.com/watch?v=Fc6a6Q5drYE"},
+{keywords:["định luật ôm"],title:"Định luật Ôm",desc:"V = I × R.",link:"https://www.youtube.com/watch?v=baqxTYqWeeU"},
+/* ===== HÓA HỌC ===== */
+{keywords:["hóa học","công thức","h2o","co2"],title:"Công thức hóa học cơ bản",desc:"H₂O, CO₂, NaCl.",link:"https://www.youtube.com/watch?v=V7F0p8mH0kE"},
+{keywords:["nguyên tử"],title:"Cấu tạo nguyên tử",desc:"Electron – Proton – Neutron.",link:"https://www.youtube.com/watch?v=8yis7GzlXNM"},
+{keywords:["phản ứng hóa học"],title:"Phản ứng hóa học là gì?",desc:"Dấu hiệu nhận biết phản ứng.",link:"https://www.youtube.com/watch?v=4L6F9bJ7hL4"},
+{keywords:["bảng tuần hoàn"],title:"Bảng tuần hoàn hóa học",desc:"Cách nhớ bảng tuần hoàn.",link:"https://www.youtube.com/watch?v=0RRVV4Diomg"},
+{keywords:["giới thiệu hóa học","hóa học là gì"],title:"Introduction to Chemistry – Cơ bản nhất",desc:"Giới thiệu các khái niệm hóa học cơ bản: nguyên tử, phân tử, nguyên tố.",link:"https://www.youtube.com/watch?v=bka20Q9TN6M"},
+{keywords:["Periodic table","bảng tuần hoàn"],title:"Periodic Table – Bảng tuần hoàn hóa học",desc:"Hướng dẫn cách hiểu bảng tuần hoàn các nguyên tố.",link:"https://www.youtube.com/watch?v=5FZJcf8CYJQ"},
+{keywords:["atoms","phân tử","ionic","molecule"],title:"Atoms, Elements và Molecules – Giải thích cơ bản",desc:"Phân biệt nguyên tử, phân tử và ion.",link:"https://www.youtube.com/watch?v=pSJeMJaCkVU"},
+{keywords:["naming compounds","đặt tên hợp chất"],title:"How to Name Ionic Compounds",desc:"Cách đặt tên hợp chất ion theo chuẩn quốc tế.",link:"https://www.youtube.com/watch?v=kc0WFJtOvM8"},
+{keywords:["Periodic Videos","video nguyên tố"],title:"Periodic Videos – Channel Hóa học",desc:"Kênh giải thích các nguyên tố và bảng tuần hoàn cực hay.",link:"https://www.youtube.com/user/periodicvideos"},
+{keywords:["The Organic Chemistry Tutor","giải thích hóa học"],title:"The Organic Chemistry Tutor – Hóa học tổng hợp",desc:"Playlist Hóa học tổng quan (nguyên tố, phân tử, phản ứng).",link:"https://www.youtube.com/channel/UCEWpbFLzoYGPfuWUMFPSaoA"},
+{keywords:["hóa học","hóa học là gì"],title:"Introduction to Chemistry",desc:"Giới thiệu môn Hóa học, khái niệm cơ bản.",link:"https://www.youtube.com/watch?v=bka20Q9TN6M"},
+{keywords:["chất","vật chất"],title:"Matter – Chất là gì?",desc:"Khái niệm chất và các trạng thái.",link:"https://www.youtube.com/watch?v=QQsybALJoew"},
+
+{keywords:["nguyên tử"],title:"Atomic Structure – Cấu tạo nguyên tử",desc:"Electron, proton, neutron.",link:"https://www.youtube.com/watch?v=HcGd5k5h6ks"},
+{keywords:["nguyên tố hóa học"],title:"Chemical Elements",desc:"Nguyên tố hóa học và ký hiệu.",link:"https://www.youtube.com/watch?v=Zg6qBIY0Xw0"},
+{keywords:["bảng tuần hoàn"],title:"Periodic Table Explained",desc:"Giải thích bảng tuần hoàn.",link:"https://www.youtube.com/watch?v=5FZJcf8CYJQ"},
+
+{keywords:["phân tử"],title:"Molecules Explained",desc:"Phân tử và liên kết.",link:"https://www.youtube.com/watch?v=pSJeMJaCkVU"},
+{keywords:["liên kết hóa học"],title:"Chemical Bonding",desc:"Liên kết ion và cộng hóa trị.",link:"https://www.youtube.com/watch?v=QXT4OVM4vXI"},
+{keywords:["ion"],title:"Ions – Cation & Anion",desc:"Ion dương và ion âm.",link:"https://www.youtube.com/watch?v=Ro2w4NT0b4M"},
+
+{keywords:["công thức hóa học"],title:"Chemical Formulas",desc:"Cách viết công thức hóa học.",link:"https://www.youtube.com/watch?v=Y9J7o2g9L7I"},
+{keywords:["h2o","nước"],title:"Water (H₂O)",desc:"Tính chất hóa học của nước.",link:"https://www.youtube.com/watch?v=HVT3Y3_gHGg"},
+{keywords:["co2","khí cacbonic"],title:"Carbon Dioxide (CO₂)",desc:"Tính chất và ứng dụng CO₂.",link:"https://www.youtube.com/watch?v=G9Z0YH2P4eM"},
+
+{keywords:["phản ứng hóa học"],title:"Chemical Reactions",desc:"Phản ứng hóa học là gì?",link:"https://www.youtube.com/watch?v=4L6F9bJ7hL4"},
+{keywords:["phương trình hóa học"],title:"Chemical Equations",desc:"Cách viết phương trình hóa học.",link:"https://www.youtube.com/watch?v=Y6v8dE1a0hM"},
+{keywords:["cân bằng phương trình"],title:"Balancing Chemical Equations",desc:"Cân bằng phương trình hóa học.",link:"https://www.youtube.com/watch?v=QqjcCvzWwww"},
+
+{keywords:["định luật bảo toàn khối lượng"],title:"Law of Conservation of Mass",desc:"Giải thích định luật bảo toàn khối lượng.",link:"https://www.youtube.com/watch?v=1xQeXOz0Ncs"},
+{keywords:["axit"],title:"Acids Explained",desc:"Tính chất của axit.",link:"https://www.youtube.com/watch?v=Vf0pRk4hH3M"},
+{keywords:["bazơ","base"],title:"Bases Explained",desc:"Tính chất của bazơ.",link:"https://www.youtube.com/watch?v=R7gHTn1gF5k"},
+{keywords:["muối"],title:"Salts in Chemistry",desc:"Muối là gì?",link:"https://www.youtube.com/watch?v=KJ2QZQ7mA8M"},
+
+{keywords:["phản ứng trung hòa"],title:"Neutralization Reaction",desc:"Axit + Bazơ → Muối + Nước.",link:"https://www.youtube.com/watch?v=9kZcM2x1K9E"},
+{keywords:["oxi hóa","khử"],title:"Oxidation and Reduction",desc:"Phản ứng oxi hóa – khử.",link:"https://www.youtube.com/watch?v=lZpM9z1pQ0k"},
+
+{keywords:["dung dịch"],title:"Solutions in Chemistry",desc:"Dung dịch, chất tan, dung môi.",link:"https://www.youtube.com/watch?v=8Zp7wY8A6tA"},
+{keywords:["nồng độ dung dịch"],title:"Concentration of Solutions",desc:"Nồng độ phần trăm.",link:"https://www.youtube.com/watch?v=Z9E0Wz3kQ7g"},
+
+
+/* ===== TIẾNG ANH ===== */
+{keywords:["động từ bất quy tắc"],title:"Irregular Verbs",desc:"Cách nhớ động từ bất quy tắc.",link:"https://www.youtube.com/watch?v=BBB"},
+{keywords:["thì hiện tại đơn"],title:"Present Simple Tense",desc:"Thì hiện tại đơn dễ hiểu.",link:"https://www.youtube.com/watch?v=K0nJ0Bf2U9M"},
+{keywords:["thì hiện tại tiếp diễn"],title:"Present Continuous",desc:"Cách dùng thì HTTD.",link:"https://www.youtube.com/watch?v=H6x5W4n6j7o"},
+{keywords:["mệnh đề quan hệ"],title:"Relative Clauses",desc:"Who – Which – That.",link:"https://www.youtube.com/watch?v=R5H0zqM8K9I"},
+{keywords:["từ vựng","vocabulary"],title:"Học từ vựng hiệu quả",desc:"Cách nhớ từ lâu.",link:"https://www.youtube.com/watch?v=1d2z3A7xXrE"},
+{keywords:["tiếng anh","học tiếng anh","english"],title:"Learn English – Introduction",desc:"Giới thiệu cách học tiếng Anh hiệu quả.",link:"https://www.youtube.com/watch?v=H3Q5zD0mV4E"},
+
+{keywords:["bảng chữ cái","alphabet"],title:"English Alphabet",desc:"Bảng chữ cái tiếng Anh và cách phát âm.",link:"https://www.youtube.com/watch?v=75p-N9YKqNo"},
+{keywords:["phát âm","pronunciation"],title:"English Pronunciation Basics",desc:"Hướng dẫn phát âm chuẩn.",link:"https://www.youtube.com/watch?v=0pXnXH6xU2Y"},
+
+{keywords:["thì hiện tại đơn","present simple"],title:"Present Simple Tense",desc:"Cách dùng thì hiện tại đơn.",link:"https://www.youtube.com/watch?v=K0nJ0Bf2U9M"},
+{keywords:["thì hiện tại tiếp diễn","present continuous"],title:"Present Continuous Tense",desc:"Cách dùng thì hiện tại tiếp diễn.",link:"https://www.youtube.com/watch?v=H6x5W4n6j7o"},
+{keywords:["thì quá khứ đơn","past simple"],title:"Past Simple Tense",desc:"Cách dùng thì quá khứ đơn.",link:"https://www.youtube.com/watch?v=9zYvN7zR0eI"},
+{keywords:["thì tương lai đơn","future simple"],title:"Future Simple Tense",desc:"Cách dùng thì tương lai đơn.",link:"https://www.youtube.com/watch?v=GzKzWq6A4nU"},
+
+{keywords:["động từ bất quy tắc","irregular verbs"],title:"Irregular Verbs",desc:"Cách nhớ động từ bất quy tắc.",link:"https://www.youtube.com/watch?v=AsNIu-1ZDTU"},
+{keywords:["động từ to be","to be"],title:"Verb To Be",desc:"Am – Is – Are dễ hiểu.",link:"https://www.youtube.com/watch?v=Q1Z5ZQ7s4vM"},
+{keywords:["modal verbs","động từ khiếm khuyết"],title:"Modal Verbs",desc:"Can, must, should, may.",link:"https://www.youtube.com/watch?v=UZfU6ZP7xM4"},
+
+{keywords:["mệnh đề quan hệ","relative clauses"],title:"Relative Clauses",desc:"Who – Which – That – Whose.",link:"https://www.youtube.com/watch?v=R5H0zqM8K9I"},
+{keywords:["câu bị động","passive voice"],title:"Passive Voice",desc:"Cách chuyển câu chủ động sang bị động.",link:"https://www.youtube.com/watch?v=Yx3vH9YtQ0E"},
+{keywords:["câu điều kiện","conditional sentences"],title:"Conditional Sentences",desc:"Câu điều kiện loại 0,1,2,3.",link:"https://www.youtube.com/watch?v=3tGJH8pP2eY"},
+
+{keywords:["từ vựng","vocabulary"],title:"Learn Vocabulary Effectively",desc:"Cách học và ghi nhớ từ vựng lâu.",link:"https://www.youtube.com/watch?v=1d2z3A7xXrE"},
+{keywords:["nghe tiếng anh","listening"],title:"English Listening Practice",desc:"Luyện nghe tiếng Anh cơ bản.",link:"https://www.youtube.com/watch?v=JbZq2zHnP8k"},
+{keywords:["nói tiếng anh","speaking"],title:"English Speaking Practice",desc:"Luyện nói tiếng Anh hằng ngày.",link:"https://www.youtube.com/watch?v=RzJp8pZJ7yQ"},
+{keywords:["đọc tiếng anh","reading"],title:"English Reading Skills",desc:"Cải thiện kỹ năng đọc hiểu.",link:"https://www.youtube.com/watch?v=9JpKQ8P7HnE"},
+{keywords:["viết tiếng anh","writing"],title:"English Writing Basics",desc:"Cách viết câu và đoạn văn.",link:"https://www.youtube.com/watch?v=QH5JZP8K6cM"},
+
+{keywords:["phát âm ed","ed pronunciation"],title:"Pronunciation of -ED",desc:"Cách phát âm -ed chuẩn.",link:"https://www.youtube.com/watch?v=H1b8Z5J9p6Q"},
+{keywords:["phát âm s es","plural pronunciation"],title:"Pronunciation of -S / -ES",desc:"Cách phát âm số nhiều.",link:"https://www.youtube.com/watch?v=Y7p9JZ8H6xM"}
+
+];
+
+/* ================= RENDER ================= */
+
+function renderVideos(videos){
+ const grid=document.getElementById("resultGrid");
+ grid.innerHTML=videos.map(v=>`
+  <div class="res-card">
+   <span class="res-type">Video học tập</span>
+   <h3 class="res-title">${v.title}</h3>
+   <p class="res-desc">${v.desc}</p>
+   <a href="${v.link}" target="_blank" class="btn-view">Xem video</a>
+  </div>
+ `).join("");
+}
+
+/* ================= LOGIC ================= */
+
+function suggestVideo(){
+ const input=document.getElementById("questionInput").value.trim().toLowerCase();
+
+ if(input===""){
+   renderVideos(defaultVideos);
+   return;
+ }
+
+ const matched=topicVideos.filter(v =>
+   v.keywords.some(k => input.includes(k))
+ );
+
+ if(matched.length===0){
+   document.getElementById("resultGrid").innerHTML=
+   `<p style="grid-column:1/-1;text-align:center;color:#64748b">
+     ❌ Chưa có video phù hợp
+   </p>`;
+   return;
+ }
+
+ renderVideos(matched);
+}
+
+/* ================= LOAD BAN ĐẦU ================= */
+renderVideos(defaultVideos);
+</script>
+
+</body>
+</html>

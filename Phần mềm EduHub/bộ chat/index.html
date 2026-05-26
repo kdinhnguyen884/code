@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>EduHub Chat Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #e5ddd5; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background: #075e54; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .close-btn { cursor: pointer; font-size: 22px; transition: 0.2s; }
+        .close-btn:hover { color: #ff4757; }
+
+        #main-layout { display: flex; flex: 1; overflow: hidden; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        
+        .sidebar { width: 150px; background: white; border-left: 1px solid #ddd; padding: 10px; }
+        .online-user { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #25d366; font-size: 14px; font-weight: 600; }
+
+        .msg { padding: 8px 12px; border-radius: 8px; background: white; max-width: 80%; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; }
+        .msg.me { background: #dcf8c6; align-self: flex-end; }
+        .msg.admin { border-left: 4px solid #ffbc00; }
+        .msg .sender { font-weight: bold; font-size: 12px; color: #e55039; margin-bottom: 4px; display: block; }
+        .msg .time { font-size: 10px; color: #999; float: right; margin-top: 5px; margin-left: 8px; }
+
+        /* Poll Styling */
+        .poll-box { background: #f9f9f9; border: 1px solid #ddd; padding: 8px; border-radius: 5px; margin-top: 5px; }
+        .poll-opt { background: white; border: 1px solid #128c7e; margin: 4px 0; padding: 5px; border-radius: 4px; cursor: pointer; position: relative; overflow: hidden; }
+        .poll-bar { position: absolute; left:0; top:0; height:100%; background: rgba(18,140,126,0.15); transition: 0.3s; }
+
+        .actions { display: none; position: absolute; top: -20px; right: 0; background: white; border-radius: 10px; padding: 2px 8px; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; }
+        .msg:hover .actions { display: flex; }
+        .act-i { cursor: pointer; font-size: 13px; color: #555; }
+
+        .input-box { background: #f0f0f0; padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ddd; }
+        input[type="text"] { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ccc; outline: none; }
+        
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 300px; text-align: center; }
+        .hidden { display: none !important; }
+        .system-msg { align-self: center; font-size: 12px; color: #777; background: #eee; padding: 3px 12px; border-radius: 12px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <span><i class="fas fa-graduation-cap"></i> EduHub Class Chat</span>
+        <i class="fas fa-times-circle close-btn" title="Quay lại Dashboard" onclick="quayLaiDashboard()"></i>
+    </div>
+
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color:#075e54">EduHub</h2>
+            <input type="text" id="user-name" placeholder="Tên của bạn..." style="width:90%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:5px;">
+            <input type="password" id="user-pass" placeholder="Mật khẩu GV (nếu có)" style="width:90%; padding:10px; margin-bottom:15px; border:1px solid #ddd; border-radius:5px;">
+            <button onclick="join()" style="width:100%; background:#128c7e; color:white; border:none; padding:12px; border-radius:5px; cursor:pointer; font-weight:bold;">VÀO LỚP</button>
+        </div>
+    </div>
+
+    <div id="poll-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Tạo Bình Chọn</h3>
+            <input type="text" id="p-q" placeholder="Câu hỏi?" style="width:90%; padding:8px; margin-bottom:10px;">
+            <input type="text" id="p-o" placeholder="Các lựa chọn (cách nhau dấu phẩy)" style="width:90%; padding:8px; margin-bottom:15px;">
+            <button onclick="createPoll()" style="background:#128c7e; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">Đăng</button>
+            <button onclick="document.getElementById('poll-modal').classList.add('hidden')" style="background:#ccc; border:none; padding:10px; margin-left:5px; border-radius:5px;">Hủy</button>
+        </div>
+    </div>
+
+    <div id="main-layout" class="hidden">
+        <div class="chat-area">
+            <div id="chat-container"></div>
+            <div id="typing" style="height:20px; font-size:12px; color:#666; padding-left:20px; font-style:italic;"></div>
+            <div class="input-box">
+                <i class="fas fa-poll" style="cursor:pointer; font-size:20px; color:#555;" onclick="document.getElementById('poll-modal').classList.remove('hidden')"></i>
+                <label style="cursor:pointer; font-size:20px; color:#555;"><i class="fas fa-image"></i><input type="file" id="f-in" hidden onchange="sendImg(this)"></label>
+                <input type="text" id="m-in" placeholder="Nhập tin nhắn..." autocomplete="off">
+                <i class="fas fa-paper-plane" onclick="sendMsg()" style="color:#128c7e; cursor:pointer; font-size:20px;"></i>
+            </div>
+        </div>
+        <div class="sidebar">
+            <p style="font-weight:bold; font-size:14px; margin-bottom:10px; color:#075e54; border-bottom:1px solid #eee;">Đang online (<span id="count">0</span>)</p>
+            <div id="list"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let myName = "";
+
+function quayLaiDashboard() {
+    if (window.opener) {
+        window.close();
+    } else {
+        window.location.href ="../bộ home/dashboard.html"; // Quay về trang chủ (Dashboard)
+    }
+}
+
+        function join() {
+            const n = document.getElementById('user-name').value.trim();
+            const p = document.getElementById('user-pass').value.trim();
+            if(n) {
+                myName = n;
+                socket.emit('dang-nhap', { ten: n, matKhau: p });
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('main-layout').classList.remove('hidden');
+            }
+        }
+
+        function sendMsg() {
+            const i = document.getElementById('m-in');
+            if(i.value.trim()) {
+                socket.emit('gui-tin-nhan', i.value);
+                i.value = '';
+                socket.emit('ngung-go');
+            }
+        }
+
+        document.getElementById('m-in').onkeydown = (e) => { 
+            if(e.key === 'Enter') sendMsg();
+            socket.emit('dang-go');
+        };
+
+        function sendImg(input) {
+            if(input.files[0]) {
+                const r = new FileReader();
+                r.onload = (e) => socket.emit('gui-anh', e.target.result);
+                r.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function createPoll() {
+            const q = document.getElementById('p-q').value;
+            const o = document.getElementById('p-o').value;
+            if(q && o) {
+                socket.emit('tao-binh-chon', { question: q, options: o.split(',') });
+                document.getElementById('poll-modal').classList.add('hidden');
+            }
+        }
+
+        socket.on('nhan-tin-nhan', (data) => {
+            const div = document.createElement('div');
+            div.className = `msg ${data.ten === myName ? 'me' : ''} ${data.isAdmin ? 'admin' : ''}`;
+            div.id = `msg-${data.id}`;
+            
+            let content = '';
+            if(data.type === 'revoked') {
+                content = `<i style="color:#999; font-size:13px;">Tin nhắn đã được thu hồi</i>`;
+            } else if(data.type === 'poll') {
+                content = `<div class="poll-box"><b>📊 ${data.question}</b>`;
+                data.options.forEach((opt, idx) => {
+                    content += `<div class="poll-opt" onclick="socket.emit('bo-phieu', {idPoll:${data.id}, indexOption:${idx}})">
+                        <div class="poll-bar" id="bar-${data.id}-${idx}" style="width:0%"></div>
+                        <div style="position:relative; display:flex; justify-content:space-between; font-size:13px;">
+                            <span>${opt.text}</span><b id="count-${data.id}-${idx}">${opt.count}</b>
+                        </div>
+                    </div>`;
+                });
+                content += `</div>`;
+            } else if(data.type === 'image') {
+                content = `<img src="${data.content}" style="max-width:100%; border-radius:5px; margin-top:5px;">`;
+            } else {
+                content = `<div>${data.content}</div>`;
+            }
+
+            div.innerHTML = `
+                ${data.type !== 'revoked' ? `
+                <div class="actions">
+                    <i class="fas fa-heart act-i" style="color:#ff4757" onclick="socket.emit('tha-tim', ${data.id})"></i>
+                    <i class="fas fa-copy act-i" onclick="navigator.clipboard.writeText('${data.content}')"></i>
+                    ${data.ten === myName ? `<i class="fas fa-undo act-i" onclick="socket.emit('thu-hoi-tin', ${data.id})"></i>` : ''}
+                </div>` : ''}
+                <span class="sender">${data.ten} ${data.isAdmin ? '⭐' : ''}</span>
+                ${content}
+                <div class="time">${data.time} <span id="likes-${data.id}">${data.likes > 0 ? '❤️'+data.likes : ''}</span></div>
+            `;
+            document.getElementById('chat-container').appendChild(div);
+            document.getElementById('chat-container').scrollTop = 1000000;
+        });
+
+        socket.on('cap-nhat-poll', (data) => {
+            data.options.forEach((opt, i) => {
+                const countEl = document.getElementById(`count-${data.id}-${i}`);
+                const barEl = document.getElementById(`bar-${data.id}-${i}`);
+                if(countEl) countEl.innerText = opt.count;
+                if(barEl) barEl.style.width = Math.min(opt.count * 10, 100) + '%';
+            });
+        });
+
+        socket.on('cap-nhat-tim', (d) => {
+            const el = document.getElementById(`likes-${d.id}`);
+            if(el) el.innerText = '❤️' + d.likes;
+        });
+
+        socket.on('lenh-thu-hoi', (id) => {
+            const m = document.getElementById(`msg-${id}`);
+            if(m) {
+                m.querySelector('span:nth-of-type(2)').innerHTML = `<i style="color:#999; font-size:13px;">Tin nhắn đã được thu hồi</i>`;
+                if(m.querySelector('.actions')) m.querySelector('.actions').remove();
+            }
+        });
+
+        socket.on('cap-nhat-online', (u) => {
+            document.getElementById('count').innerText = u.length;
+            document.getElementById('list').innerHTML = u.map(n => `<div class="online-user"><i class="fas fa-circle" style="font-size:8px;"></i> ${n}</div>`).join('');
+        });
+
+        socket.on('thong-bao-he-thong', (m) => {
+            const d = document.createElement('div'); d.className = 'system-msg'; d.innerText = m;
+            document.getElementById('chat-container').appendChild(d);
+        });
+
+        socket.on('ai-do-dang-go', (n) => document.getElementById('typing').innerText = `${n} đang soạn tin...`);
+        socket.on('ai-do-ngung-go', () => document.getElementById('typing').innerText = '');
+    </script>
+</body>
+</html>
